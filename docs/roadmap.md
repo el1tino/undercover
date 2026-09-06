@@ -19,13 +19,14 @@ phishing/ham dataset. Rule-based catches the obvious stuff; the
 classifier handles what rules miss. See
 [`phase2-phishing-detection.md`](phase2-phishing-detection.md).
 
-## Phase 3 — Central API and database
+## Phase 3 — Central API and database ✅ implemented
 
 This is where it becomes a real client-server app: a FastAPI backend
 with SQLite to start (Postgres later for a production-grade setup), so
 the local CLI scanner submits findings to a hosted API and shared
 database instead of just printing to console. FastAPI's built-in
-`/docs` is used for interactive API testing while building it out.
+`/docs` is used for interactive API testing while building it out. See
+[`phase3-api-and-database.md`](phase3-api-and-database.md).
 
 ## Phase 4 — Anomaly detection
 

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
+from undercover.api.client import DEFAULT_API_URL, ApiClient, ApiClientError
 from undercover.phishing.detector import PhishingDetector
 from undercover.phishing.email_message import EmailMessage
 
@@ -69,13 +71,38 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exit with status code 1 if the verdict is not 'clean' "
         "(useful in CI/pre-commit hooks).",
     )
+    parser.add_argument(
+        "--submit",
+        action="store_true",
+        help="Submit the result to the undercover API (Phase 3) in addition "
+        "to printing it.",
+    )
+    parser.add_argument(
+        "--api-url",
+        default=os.environ.get("UNDERCOVER_API_URL", DEFAULT_API_URL),
+        help="Base URL of the undercover API (default: %(default)s, or "
+        "$UNDERCOVER_API_URL).",
+    )
     return parser
+
+
+def _submit(api_url: str, source_label: str, result) -> None:
+    client = ApiClient(base_url=api_url)
+    try:
+        response = client.submit_phishing_analysis(source_label, result)
+        print(
+            f"Submitted to API: phishing analysis id={response.get('id')}",
+            file=sys.stderr,
+        )
+    except ApiClientError as exc:
+        print(f"Warning: could not submit to API -- {exc}", file=sys.stderr)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    source_label = args.path if args.path and args.path != "-" else "<stdin>"
     raw = _read_input(args.path)
     msg = EmailMessage.from_raw(raw)
     detector = PhishingDetector(use_ml=not args.no_ml, model_path=args.model)
@@ -84,8 +111,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(result.to_dict(), indent=2))
     else:
-        source_label = args.path if args.path and args.path != "-" else "<stdin>"
         _print_human(result, source_label)
+
+    if args.submit:
+        _submit(args.api_url, source_label, result)
 
     if args.fail_on_detect and result.verdict != "clean":
         return 1

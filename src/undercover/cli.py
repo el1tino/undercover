@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
+from undercover.api.client import DEFAULT_API_URL, ApiClient, ApiClientError
 from undercover.dlp.scanner import DLPScanner, ScanResult
 
 
@@ -60,13 +62,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exit with status code 1 if any findings are detected "
         "(useful in CI/pre-commit hooks).",
     )
+    parser.add_argument(
+        "--submit",
+        action="store_true",
+        help="Submit the result to the undercover API (Phase 3) in addition "
+        "to printing it.",
+    )
+    parser.add_argument(
+        "--api-url",
+        default=os.environ.get("UNDERCOVER_API_URL", DEFAULT_API_URL),
+        help="Base URL of the undercover API (default: %(default)s, or "
+        "$UNDERCOVER_API_URL).",
+    )
     return parser
+
+
+def _submit(api_url: str, source_label: str, result: ScanResult) -> None:
+    client = ApiClient(base_url=api_url)
+    try:
+        response = client.submit_dlp_scan(source_label, result)
+        print(f"Submitted to API: dlp scan id={response.get('id')}", file=sys.stderr)
+    except ApiClientError as exc:
+        print(f"Warning: could not submit to API -- {exc}", file=sys.stderr)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    source_label = args.path if args.path and args.path != "-" else "<stdin>"
     text = _read_input(args.path)
     scanner = DLPScanner(use_ner=not args.no_ner)
     result = scanner.scan(text)
@@ -74,8 +98,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(result.to_dict(), indent=2))
     else:
-        source_label = args.path if args.path and args.path != "-" else "<stdin>"
         _print_human(result, source_label)
+
+    if args.submit:
+        _submit(args.api_url, source_label, result)
 
     if args.fail_on_find and result.has_findings:
         return 1

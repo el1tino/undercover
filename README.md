@@ -6,10 +6,11 @@ pipeline with risk scoring and SIEM export.
 
 ## Status
 
-**Phases 1 (DLP scanner) and 2 (phishing detection) are implemented.**
-Phases 3-5 are scaffolded as stub packages with their design documented
-in [`docs/roadmap.md`](docs/roadmap.md); see that file for what's
-coming next and why the phases are ordered the way they are.
+**Phases 1 (DLP scanner), 2 (phishing detection), and 3 (central API +
+database) are implemented.** Phases 4-5 are scaffolded as stub packages
+with their design documented in [`docs/roadmap.md`](docs/roadmap.md);
+see that file for what's coming next and why the phases are ordered
+the way they are.
 
 ## Phase 1: DLP scanner
 
@@ -95,6 +96,41 @@ pip install -e ".[dev,phishing]"
 pytest
 ```
 
+## Phase 3: Central API and database
+
+A FastAPI + SQLite backend the CLI scanners submit their results to,
+instead of only printing them. Interactive docs come free at `/docs`.
+
+See [`docs/phase3-api-and-database.md`](docs/phase3-api-and-database.md)
+for endpoint details and design decisions.
+
+### Install and run
+
+```bash
+pip install -e ".[api]"
+undercover-api                # http://127.0.0.1:8000, docs at /docs
+```
+
+### Use
+
+```bash
+# Submit a DLP scan to the API instead of just printing it
+undercover --submit examples/sample_emails/leaky_email.txt
+
+# Submit a phishing analysis
+undercover-phish --submit examples/sample_emails/phishing_example.eml
+
+# Point at a non-default API (or set $UNDERCOVER_API_URL)
+undercover --submit --api-url http://localhost:8080 email.txt
+```
+
+### Develop
+
+```bash
+pip install -e ".[dev,api]"
+pytest tests/api
+```
+
 ## Project layout
 
 ```
@@ -102,7 +138,7 @@ src/undercover/
 ├── cli.py       # CLI entry point (undercover)
 ├── dlp/         # Phase 1 -- implemented
 ├── phishing/    # Phase 2 -- implemented
-├── api/         # Phase 3 -- planned
+├── api/         # Phase 3 -- implemented
 ├── anomaly/     # Phase 4 -- planned
 └── risk/        # Phase 5 -- planned
 tests/           # pytest suite, mirrors src/ layout

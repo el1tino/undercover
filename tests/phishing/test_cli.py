@@ -51,3 +51,14 @@ def test_scans_a_file(tmp_path, capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "Verdict for" in captured.out
+
+
+def test_submit_to_unreachable_api_warns_but_does_not_crash(tmp_path, capsys):
+    sample = tmp_path / "sample.eml"
+    sample.write_text(RAW_CLEAN_EMAIL)
+    exit_code = main(
+        ["--no-ml", "--submit", "--api-url", "http://127.0.0.1:59999", str(sample)]
+    )
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Warning: could not submit to API" in captured.err

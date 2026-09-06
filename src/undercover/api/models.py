@@ -1,0 +1,90 @@
+"""SQLAlchemy ORM models for stored DLP scans and phishing analyses.
+
+These mirror the DLP `Finding`/`ScanResult` and phishing `PhishingResult`
+shapes from Phases 1-2 (see undercover.dlp.scanner and
+undercover.phishing.detector) but persisted rather than printed.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from undercover.api.database import Base
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class DlpScan(Base):
+    __tablename__ = "dlp_scans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source: Mapped[str] = mapped_column(String(500))
+    ner_ran: Mapped[bool] = mapped_column(default=False)
+    ner_skip_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+
+    findings: Mapped[list["DlpFinding"]] = relationship(
+        back_populates="scan", cascade="all, delete-orphan"
+    )
+
+    @property
+    def finding_count(self) -> int:
+        return len(self.findings)
+
+
+class DlpFinding(Base):
+    __tablename__ = "dlp_findings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scan_id: Mapped[int] = mapped_column(ForeignKey("dlp_scans.id"))
+    type: Mapped[str] = mapped_column(String(100))
+    label: Mapped[str] = mapped_column(String(200))
+    value: Mapped[str] = mapped_column(String(500))  # already redacted by the client
+    start: Mapped[int] = mapped_column(Integer)
+    end: Mapped[int] = mapped_column(Integer)
+    source: Mapped[str] = mapped_column(String(20))  # "regex" | "ner"
+    confidence: Mapped[float] = mapped_column(Float)
+
+    scan: Mapped["DlpScan"] = relationship(back_populates="findings")
+
+
+class PhishingAnalysis(Base):
+    __tablename__ = "phishing_analyses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source: Mapped[str] = mapped_column(String(500))
+    verdict: Mapped[str] = mapped_column(String(20))
+    combined_score: Mapped[float] = mapped_column(Float)
+    rule_score: Mapped[float] = mapped_column(Float)
+    ml_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ml_skip_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+
+    rule_hits: Mapped[list["PhishingRuleHit"]] = relationship(
+        back_populates="analysis", cascade="all, delete-orphan"
+    )
+
+    @property
+    def rule_hit_count(self) -> int:
+        return len(self.rule_hits)
+
+
+class PhishingRuleHit(Base):
+    __tablename__ = "phishing_rule_hits"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    analysis_id: Mapped[int] = mapped_column(ForeignKey("phishing_analyses.id"))
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(Text)
+    weight: Mapped[float] = mapped_column(Float)
+
+    analysis: Mapped["PhishingAnalysis"] = relationship(back_populates="rule_hits")

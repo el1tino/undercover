@@ -41,3 +41,14 @@ def test_scans_a_file(tmp_path, capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "Credit Card Number" in captured.out
+
+
+def test_submit_to_unreachable_api_warns_but_does_not_crash(tmp_path, capsys):
+    sample = tmp_path / "sample.txt"
+    sample.write_text("Nothing sensitive here.")
+    exit_code = main(
+        ["--no-ner", "--submit", "--api-url", "http://127.0.0.1:59999", str(sample)]
+    )
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Warning: could not submit to API" in captured.err
