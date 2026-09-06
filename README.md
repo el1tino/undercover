@@ -16,6 +16,66 @@ dashboard, and a browser extension for one-click reporting). The
 roadmap doc has the full narrative of how each piece was built and
 why, in order.
 
+## Quick start
+
+The fastest path to running the whole thing end to end -- everything
+below is covered in more depth (and can be installed piecemeal) in the
+phase/feature sections that follow.
+
+```bash
+git clone https://github.com/el1tino/undercover.git
+cd undercover
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Every extra in one shot (dev tools + all optional features)
+pip install -e ".[dev,ner,phishing,api,anomaly,attachments,alerting]"
+python -m spacy download en_core_web_sm   # needed for the [ner] extra to actually load a model
+```
+
+Run the test suite:
+
+```bash
+pytest -q -rs   # 269 passed, 8 skipped with every extra installed above
+
+# Or with just the core + dev extras, to see the project degrade gracefully
+# without the optional ML/NER/API dependencies:
+pip install -e ".[dev]"
+pytest -q -rs   # 177 passed, 44 skipped
+```
+
+Start the API and open the web UI:
+
+```bash
+undercover-api   # http://127.0.0.1:8000
+# Interactive API docs:  http://127.0.0.1:8000/docs
+# Trend dashboard:       http://127.0.0.1:8000/ui/dashboard
+# Case triage view:      http://127.0.0.1:8000/ui/cases
+```
+
+Try the CLIs against the bundled examples:
+
+```bash
+undercover examples/sample_emails/leaky_email.txt              # Phase 1: DLP scan
+undercover-phish examples/sample_emails/phishing_example.eml   # Phase 2: phishing detection
+undercover-risk examples/sample_emails/phishing_example.eml    # Phase 5: unified risk score
+
+# Submit results to the running API instead of just printing them
+undercover-risk --submit examples/sample_emails/phishing_example.eml
+undercover-anomaly   # Phase 4: per-sender anomaly report, once a few analyses are submitted
+```
+
+Load the browser extension (needs the API running from above):
+`chrome://extensions` -> enable **Developer mode** -> **Load unpacked**
+-> select `browser-extension/`. See
+[`docs/browser-extension.md`](docs/browser-extension.md) for details.
+
+Everything else -- attachment scanning, alerting, MITRE ATT&CK tagging,
+audit logging -- works the same way once the API is running; see the
+sections below for each one's specific setup (most need an API key or
+environment variable) and the `docs/*.md` link for the design behind
+it.
+
 ## Phase 1: DLP scanner
 
 Scans email or text content for sensitive data:
