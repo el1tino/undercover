@@ -69,6 +69,7 @@ class PhishingRuleHitOut(PhishingRuleHitIn):
 
 class PhishingAnalysisCreate(BaseModel):
     source: str = Field(..., max_length=500)
+    sender_email: str | None = Field(default=None, max_length=320)
     verdict: str
     combined_score: float
     rule_score: float
@@ -82,6 +83,7 @@ class PhishingAnalysisOut(BaseModel):
 
     id: int
     source: str
+    sender_email: str | None
     verdict: str
     combined_score: float
     rule_score: float
@@ -96,6 +98,24 @@ class PhishingAnalysisSummary(BaseModel):
 
     id: int
     source: str
+    sender_email: str | None
     verdict: str
     combined_score: float
     created_at: datetime
+
+
+class AnomalySenderResult(BaseModel):
+    sender_email: str
+    is_anomaly: bool
+    anomaly_score: float
+    message_count: int
+    avg_combined_score: float
+    max_combined_score: float
+    phishing_ratio: float
+    suspicious_ratio: float
+    send_hour_stddev: float
+
+
+class AnomalyReportOut(BaseModel):
+    results: list[AnomalySenderResult] = Field(default_factory=list)
+    skip_reason: str | None = None

@@ -28,12 +28,15 @@ database instead of just printing to console. FastAPI's built-in
 `/docs` is used for interactive API testing while building it out. See
 [`phase3-api-and-database.md`](phase3-api-and-database.md).
 
-## Phase 4 — Anomaly detection
+## Phase 4 — Anomaly detection ✅ implemented
 
 Add behavioral/statistical detection on top of the rule-based work:
 isolation forests or clustering over sender metadata (sending
 patterns, volume, timing, relationship graphs) to flag things that
-don't fit a known rule but still look wrong.
+don't fit a known rule but still look wrong. See
+[`phase4-anomaly-detection.md`](phase4-anomaly-detection.md). Note:
+relationship-graph features are still open -- see that doc's Known
+Limitations.
 
 ## Phase 5 — Risk scoring, header analysis, SIEM export
 

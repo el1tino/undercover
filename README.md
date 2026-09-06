@@ -6,11 +6,11 @@ pipeline with risk scoring and SIEM export.
 
 ## Status
 
-**Phases 1 (DLP scanner), 2 (phishing detection), and 3 (central API +
-database) are implemented.** Phases 4-5 are scaffolded as stub packages
-with their design documented in [`docs/roadmap.md`](docs/roadmap.md);
-see that file for what's coming next and why the phases are ordered
-the way they are.
+**Phases 1 (DLP scanner), 2 (phishing detection), 3 (central API +
+database), and 4 (anomaly detection) are implemented.** Phase 5 is
+scaffolded as a stub package with its design documented in
+[`docs/roadmap.md`](docs/roadmap.md); see that file for what's coming
+next and why the phases are ordered the way they are.
 
 ## Phase 1: DLP scanner
 
@@ -131,6 +131,43 @@ pip install -e ".[dev,api]"
 pytest tests/api
 ```
 
+## Phase 4: Anomaly detection
+
+Flags senders whose *aggregate behavior* looks wrong -- unusual
+volume, unusually high risk scores, an unusually high phishing ratio,
+suspiciously regular send timing -- even when no single message they
+sent tripped a Phase 2 rule. Computed on demand from the phishing
+analyses Phase 3 has stored, via an optional scikit-learn
+`IsolationForest`.
+
+See [`docs/phase4-anomaly-detection.md`](docs/phase4-anomaly-detection.md)
+for how the features are built and the model's limitations.
+
+### Install
+
+```bash
+pip install -e ".[api,anomaly]"   # anomaly detection runs server-side
+```
+
+### Use
+
+```bash
+# Submit a few phishing analyses first so there's something to compare
+undercover-phish --submit examples/sample_emails/phishing_example.eml
+undercover-phish --submit examples/sample_emails/legit_example.eml
+
+# Then fetch the per-sender anomaly report
+undercover-anomaly
+undercover-anomaly --json
+```
+
+### Develop
+
+```bash
+pip install -e ".[dev,api,anomaly]"
+pytest tests/anomaly tests/api/test_anomaly_routes.py
+```
+
 ## Project layout
 
 ```
@@ -139,7 +176,7 @@ src/undercover/
 ├── dlp/         # Phase 1 -- implemented
 ├── phishing/    # Phase 2 -- implemented
 ├── api/         # Phase 3 -- implemented
-├── anomaly/     # Phase 4 -- planned
+├── anomaly/     # Phase 4 -- implemented
 └── risk/        # Phase 5 -- planned
 tests/           # pytest suite, mirrors src/ layout
 docs/            # architecture notes + per-phase design docs

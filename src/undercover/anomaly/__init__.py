@@ -1,7 +1,19 @@
-"""Anomaly detection (Phase 4 -- not yet implemented).
+"""Anomaly detection (Phase 4).
 
-Will layer behavioral/statistical detection (isolation forests or
-clustering over sender metadata: sending patterns, volume, timing,
-relationship graphs) on top of the rule-based work from earlier
-phases. See docs/roadmap.md for the full plan.
+Aggregates per-sender features from submitted phishing analyses
+(undercover.anomaly.features) and flags outlier senders with an
+optional scikit-learn IsolationForest (undercover.anomaly.detector).
+Exposed via the API at GET /anomaly/senders and the `undercover-anomaly`
+CLI. See docs/phase4-anomaly-detection.md and docs/roadmap.md.
 """
+
+from undercover.anomaly.detector import AnomalyDetector, AnomalyReport, AnomalyResult
+from undercover.anomaly.features import SenderFeatures, extract_sender_features
+
+__all__ = [
+    "AnomalyDetector",
+    "AnomalyReport",
+    "AnomalyResult",
+    "SenderFeatures",
+    "extract_sender_features",
+]

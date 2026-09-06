@@ -86,10 +86,12 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _submit(api_url: str, source_label: str, result) -> None:
+def _submit(api_url: str, source_label: str, result, sender_email: str | None) -> None:
     client = ApiClient(base_url=api_url)
     try:
-        response = client.submit_phishing_analysis(source_label, result)
+        response = client.submit_phishing_analysis(
+            source_label, result, sender_email=sender_email
+        )
         print(
             f"Submitted to API: phishing analysis id={response.get('id')}",
             file=sys.stderr,
@@ -114,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
         _print_human(result, source_label)
 
     if args.submit:
-        _submit(args.api_url, source_label, result)
+        _submit(args.api_url, source_label, result, msg.sender_email or None)
 
     if args.fail_on_detect and result.verdict != "clean":
         return 1

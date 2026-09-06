@@ -30,6 +30,30 @@ class TestCreateAnalysis:
         assert body["verdict"] == "phishing"
         assert len(body["rule_hits"]) == 1
 
+    def test_persists_sender_email(self, client):
+        payload = {
+            "source": "phishing.eml",
+            "sender_email": "attacker@evil.example",
+            "verdict": "phishing",
+            "combined_score": 0.87,
+            "rule_score": 1.0,
+            "rule_hits": [],
+        }
+        resp = client.post("/phishing/analyses", json=payload)
+        assert resp.status_code == 201
+        assert resp.json()["sender_email"] == "attacker@evil.example"
+
+    def test_sender_email_defaults_to_none(self, client):
+        payload = {
+            "source": "phishing.eml",
+            "verdict": "phishing",
+            "combined_score": 0.87,
+            "rule_score": 1.0,
+            "rule_hits": [],
+        }
+        resp = client.post("/phishing/analyses", json=payload)
+        assert resp.json()["sender_email"] is None
+
     def test_creates_analysis_without_ml(self, client):
         payload = {
             "source": "clean.eml",

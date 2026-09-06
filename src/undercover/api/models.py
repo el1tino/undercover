@@ -60,6 +60,9 @@ class PhishingAnalysis(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     source: Mapped[str] = mapped_column(String(500))
+    sender_email: Mapped[str | None] = mapped_column(
+        String(320), nullable=True, index=True
+    )
     verdict: Mapped[str] = mapped_column(String(20))
     combined_score: Mapped[float] = mapped_column(Float)
     rule_score: Mapped[float] = mapped_column(Float)

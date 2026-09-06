@@ -1,6 +1,6 @@
 # Architecture
 
-## Current shape (Phases 1-3)
+## Current shape (Phases 1-4)
 
 ```
 src/undercover/
@@ -21,10 +21,13 @@ src/undercover/
 │   ├── database.py         # SQLAlchemy engine/session, SQLite by default
 │   ├── models.py            # DlpScan/DlpFinding, PhishingAnalysis/PhishingRuleHit
 │   ├── schemas.py            # Pydantic request/response shapes
-│   ├── routes/                # /dlp/scans, /phishing/analyses
+│   ├── routes/                # /dlp/scans, /phishing/analyses, /anomaly/senders
 │   ├── server.py               # FastAPI app (create_app, lifespan -> init_db)
 │   └── serve_cli.py             # entry point: `undercover-api`
-├── anomaly/              # Phase 4 stub
+├── anomaly/
+│   ├── features.py        # extract_sender_features: groups analyses by sender
+│   ├── detector.py         # optional scikit-learn IsolationForest
+│   └── cli.py                # entry point: `undercover-anomaly` (thin API client)
 └── risk/                 # Phase 5 stub
 ```
 
@@ -78,6 +81,19 @@ src/undercover/
   differ (character offsets vs. rule weights) and forcing them
   together would mean a discriminator column and nullable fields for
   whichever type doesn't apply.
+- **Anomaly detection operates on senders, not messages.** Phases 1-2
+  already score individual messages; scoring messages again with
+  `IsolationForest` would just be a worse classifier. `AnomalyDetector`
+  instead aggregates every stored `PhishingAnalysis` per
+  `sender_email` (`undercover.anomaly.features.extract_sender_features`)
+  and looks for senders whose aggregate behavior -- volume, average/max
+  risk score, phishing ratio, send-time regularity -- doesn't fit the
+  rest of the batch. It's a read-only computed view (`GET
+  /anomaly/senders`), not something a client submits to.
+- **`sender_email` was added to `PhishingAnalysis` specifically to
+  enable this.** It wasn't needed until Phase 4 needed a join key to
+  group analyses by sender; adding it to the existing model/schema/
+  client was a small, additive change rather than a redesign.
 
 ## Where later phases plug in
 
@@ -92,11 +108,10 @@ src/undercover/
   printing them, with SQLite as the initial datastore (swappable for
   Postgres via `UNDERCOVER_DB_URL`, no code change).
 - **Phase 4 (anomaly)** consumes the metadata the API has accumulated
-  (sender, timing, volume) rather than single-message content, so it
-  naturally depends on Phase 3 existing first -- the tables it needs
-  (a submitter/sender identity, timestamps) already exist in
-  `DlpScan.created_at`/`PhishingAnalysis.created_at`; Phase 4 mainly
-  adds the sender-identity and volume dimensions on top.
+  (sender, timing, volume) rather than single-message content, which is
+  why it depended on Phase 3 existing first -- and why it needed one
+  small addition to Phase 3's schema (`PhishingAnalysis.sender_email`)
+  to have a join key at all.
 - **Phase 5 (risk scoring)** is a fusion layer: it reads DLP findings,
   phishing scores, anomaly scores, and header-auth results for a
   message and produces one number plus a CEF/JSON export.

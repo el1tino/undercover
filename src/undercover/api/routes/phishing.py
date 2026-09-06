@@ -17,6 +17,7 @@ def create_analysis(
 ) -> models.PhishingAnalysis:
     analysis = models.PhishingAnalysis(
         source=payload.source,
+        sender_email=payload.sender_email,
         verdict=payload.verdict,
         combined_score=payload.combined_score,
         rule_score=payload.rule_score,
