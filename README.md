@@ -6,10 +6,10 @@ pipeline with risk scoring and SIEM export.
 
 ## Status
 
-**Phase 1 (DLP scanner) is implemented.** Phases 2-5 are scaffolded as
-stub packages with their design documented in
-[`docs/roadmap.md`](docs/roadmap.md); see that file for what's coming
-next and why the phases are ordered the way they are.
+**Phases 1 (DLP scanner) and 2 (phishing detection) are implemented.**
+Phases 3-5 are scaffolded as stub packages with their design documented
+in [`docs/roadmap.md`](docs/roadmap.md); see that file for what's
+coming next and why the phases are ordered the way they are.
 
 ## Phase 1: DLP scanner
 
@@ -54,10 +54,44 @@ undercover --no-ner examples/sample_emails/leaky_email.txt
 undercover --fail-on-find examples/sample_emails/leaky_email.txt
 ```
 
+## Phase 2: Phishing detection
+
+Analyzes an email for phishing indicators: a rule-based pass
+(suspicious links, urgency language, spoofed display names,
+sender/reply-to mismatches) combined with an optional scikit-learn
+classifier, producing a `clean` / `suspicious` / `phishing` verdict.
+
+See [`docs/phase2-phishing-detection.md`](docs/phase2-phishing-detection.md)
+for design details, including why the bundled dataset is a toy and how
+to swap in a real one.
+
+### Install
+
+```bash
+pip install -e ".[phishing]"
+```
+
+### Use
+
+```bash
+# Analyze a .eml file
+undercover-phish examples/sample_emails/phishing_example.eml
+
+# Machine-readable output
+undercover-phish --json examples/sample_emails/phishing_example.eml
+
+# Rules only (skip the ML classifier)
+undercover-phish --no-ml examples/sample_emails/legit_example.eml
+
+# Train and save a model (default: the bundled demo dataset)
+undercover-phish-train --out models/phishing_classifier.joblib
+undercover-phish --model models/phishing_classifier.joblib examples/sample_emails/phishing_example.eml
+```
+
 ### Develop
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,phishing]"
 pytest
 ```
 
@@ -65,9 +99,9 @@ pytest
 
 ```
 src/undercover/
-├── cli.py       # CLI entry point
+├── cli.py       # CLI entry point (undercover)
 ├── dlp/         # Phase 1 -- implemented
-├── phishing/    # Phase 2 -- planned
+├── phishing/    # Phase 2 -- implemented
 ├── api/         # Phase 3 -- planned
 ├── anomaly/     # Phase 4 -- planned
 └── risk/        # Phase 5 -- planned

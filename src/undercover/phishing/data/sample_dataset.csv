@@ -1,0 +1,51 @@
+text,label
+"Dear Customer, your account has been suspended due to unusual activity. Verify your account immediately by clicking the link below or it will be permanently closed.",phishing
+URGENT: Your PayPal account will be limited. Confirm your identity within 24 hours to avoid suspension of your account.,phishing
+Congratulations! You have won a $1000 gift card. Click here immediately to claim your prize before it expires.,phishing
+"Dear valued customer, we detected unusual activity on your bank account. Please confirm your password to restore access.",phishing
+Your Netflix payment failed. Update your billing information now or your account will be closed within 48 hours.,phishing
+Final notice: Your package could not be delivered. Click the link to confirm your address and avoid return to sender.,phishing
+Act now! Your Microsoft 365 subscription has expired. Renew immediately to avoid losing all your files.,phishing
+We noticed a login attempt from an unrecognized device. Verify your account now to secure it from unauthorized access.,phishing
+Your Apple ID has been locked for security reasons. Confirm your identity immediately to unlock your account.,phishing
+IRS Notice: You have an outstanding tax refund. Submit your information immediately to claim your refund before it expires.,phishing
+"Dear user, unusual activity has been detected on your Amazon account. Please verify your account information right away.",phishing
+Your invoice is overdue. Failure to respond within 24 hours will result in legal action against your account.,phishing
+Security Alert: Someone tried to access your account from a new location. Confirm your identity now to prevent suspension.,phishing
+You have a pending delivery. Click here immediately to pay a small customs fee and release your package.,phishing
+This is your final notice regarding your extended car warranty. Act now before this offer expires today.,phishing
+"Dear account holder, your mailbox has exceeded its storage limit. Click here to verify your account and avoid deletion.",phishing
+Your subscription payment was declined. Update your payment details immediately to avoid service interruption.,phishing
+Immediate attention required: Your LinkedIn account has been reported for violating our policy. Verify your identity now.,phishing
+We could not verify your recent payment. Confirm your billing details immediately or your order will be cancelled.,phishing
+Your Wells Fargo account has been temporarily suspended. Confirm your identity immediately to restore full access.,phishing
+Attention: Your DHL package is on hold due to unpaid customs fees. Click here immediately to release your shipment.,phishing
+Your Chase account access has been restricted due to unusual activity. Verify your account now to avoid permanent closure.,phishing
+"Dear customer, your USPS delivery failed due to an incomplete address. Confirm your address immediately to reschedule.",phishing
+Limited time offer: claim your free iPhone now by confirming your shipping details before the offer expires.,phishing
+Your FedEx shipment requires payment of a customs fee. Act now to avoid your package being returned.,phishing
+"Hi team, attaching the agenda for tomorrow's 10am standup. Let me know if you want to add anything.",ham
+"Thanks for sending over the quarterly numbers, I'll review them before our sync on Thursday.",ham
+Reminder that the office will be closed on Monday for the holiday. See everyone Tuesday.,ham
+Here's the draft of the proposal we discussed. Happy to hop on a call if you have questions.,ham
+"Great meeting you at the conference last week, would love to grab coffee sometime next month.",ham
+"The new build is deployed to staging, can you run through the checklist when you get a chance.",ham
+"Attached are the meeting notes from today's design review, let me know if I missed anything.",ham
+"Looking forward to the team lunch on Friday, I booked a table for six at noon.",ham
+Can you review the pull request when you have a minute? I made the changes we talked about.,ham
+"The invoice for last month's services is attached for your records, no action needed on your end.",ham
+"Just a heads up, the server maintenance window is scheduled for Saturday night, expect brief downtime.",ham
+"Loved your presentation today, the data visualizations really made the case clearly.",ham
+"Let's reschedule our 1:1 to Wednesday afternoon, something came up on my end tomorrow.",ham
+"The vendor confirmed the shipment will arrive next Tuesday, I'll forward the tracking number once I have it.",ham
+"Here's the recording from today's all-hands in case you missed it, slides are in the shared drive.",ham
+"Quick question about the budget spreadsheet, did we account for the extra contractor hours?",ham
+Congrats on the launch! The team worked really hard and it shows in the numbers so far.,ham
+"I updated the project timeline based on our discussion, take a look when you can.",ham
+"Reminder: performance reviews are due by end of week, let me know if you need more time.",ham
+"The client loved the mockups, they just want a small color tweak on the header.",ham
+Can we push our call to 3pm instead of 2? I have a conflict that just came up.,ham
+"Here's the summary from the customer call, overall they're happy with the rollout.",ham
+"Thanks for covering my shift last week, I owe you one. Let me know if you ever need the same.",ham
+"The new hire orientation is scheduled for Monday morning, please make sure their laptop is ready.",ham
+"Just finished the code review, left a few comments but overall looks solid, nice work.",ham

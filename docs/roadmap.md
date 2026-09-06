@@ -10,13 +10,14 @@ regex for structured PII (SSNs, credit cards, API keys, credentials)
 plus spaCy NER for names, addresses, and other unstructured PII. See
 [`phase1-dlp-scanner.md`](phase1-dlp-scanner.md).
 
-## Phase 2 — Phishing detection
+## Phase 2 — Phishing detection ✅ implemented
 
 Layer in phishing classification: a rule-based pass (suspicious links,
 urgency language, spoofed display names, mismatched sender domains)
 combined with a scikit-learn ML classifier trained on a labeled
 phishing/ham dataset. Rule-based catches the obvious stuff; the
-classifier handles what rules miss.
+classifier handles what rules miss. See
+[`phase2-phishing-detection.md`](phase2-phishing-detection.md).
 
 ## Phase 3 — Central API and database
 
