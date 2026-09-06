@@ -1,0 +1,16 @@
+From: Jane Doe <jane.doe@acme-corp.com>
+To: accounting@acme-corp.com
+Subject: Updated payroll info
+
+Hi team,
+
+Please update my direct deposit details. My new SSN for verification
+is 523-45-6789, and you can reach me at 415-555-0132 if there's a
+problem.
+
+Also, here's the AWS key our contractor left in the shared doc, please
+rotate it: AKIAABCDEFGHIJKLMNOP
+
+Thanks,
+Jane Doe
+123 Market Street, San Francisco, CA
