@@ -1,8 +1,8 @@
-"""Unified risk scoring: fuses whichever signals from Phases 1-4 are
-available for a message into one risk score and level.
+"""Unified risk scoring: fuses whichever signals are available for a
+message into one risk score and level.
 
 Every input is optional. A message might only have gone through the
-DLP scanner, or only the phishing detector, or all four -- the score
+DLP scanner, or only the phishing detector, or all five -- the score
 is a weighted average over whatever evidence is actually present,
 rather than assuming every signal ran. This mirrors the graceful
 degradation used throughout the project for *dependencies*
@@ -15,19 +15,22 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 
+from undercover.attachments.scanner import summarize_attachment_risk
 from undercover.risk.headers import HeaderAuthReport
 
 if TYPE_CHECKING:
+    from undercover.attachments.results import AttachmentVerdict
     from undercover.dlp.scanner import ScanResult
     from undercover.phishing.detector import PhishingResult
 
 # Relative weights when every signal is present. RiskAssessment normalizes
 # by the weight of signals actually supplied, so a message missing a signal
 # isn't penalized for it -- see the module docstring.
-PHISHING_WEIGHT = 0.45
-DLP_WEIGHT = 0.25
-HEADER_WEIGHT = 0.20
+PHISHING_WEIGHT = 0.40
+DLP_WEIGHT = 0.20
+HEADER_WEIGHT = 0.15
 ANOMALY_WEIGHT = 0.10
+ATTACHMENT_WEIGHT = 0.15
 
 CRITICAL_THRESHOLD = 0.8
 HIGH_THRESHOLD = 0.6
@@ -91,6 +94,7 @@ def assess_risk(
     phishing_result: Optional["PhishingResult"] = None,
     header_report: Optional[HeaderAuthReport] = None,
     sender_is_anomalous: Optional[bool] = None,
+    attachment_verdicts: Optional[list["AttachmentVerdict"]] = None,
 ) -> RiskAssessment:
     factors: list[RiskFactor] = []
 
@@ -125,6 +129,14 @@ def assess_risk(
                     if sender_is_anomalous
                     else "sender not flagged as anomalous"
                 ),
+            )
+        )
+
+    if attachment_verdicts is not None:
+        value, detail = summarize_attachment_risk(attachment_verdicts)
+        factors.append(
+            RiskFactor(
+                name="attachments", weight=ATTACHMENT_WEIGHT, value=value, detail=detail
             )
         )
 

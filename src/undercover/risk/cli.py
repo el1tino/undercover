@@ -14,6 +14,8 @@ import os
 import sys
 
 from undercover.api.client import DEFAULT_API_URL, ApiClient, ApiClientError
+from undercover.attachments.results import AttachmentVerdict
+from undercover.attachments.scanner import AttachmentScanner
 from undercover.dlp.scanner import DLPScanner
 from undercover.phishing.detector import PhishingDetector
 from undercover.phishing.email_message import EmailMessage
@@ -61,6 +63,7 @@ def _print_human(
     header_report: HeaderAuthReport,
     source_label: str,
     anomaly_skip_reason: str | None,
+    attachment_verdicts: list[AttachmentVerdict] | None,
 ) -> None:
     print(f"Risk assessment for {source_label}")
     print(f"  risk level: {assessment.risk_level.upper()}")
@@ -89,6 +92,17 @@ def _print_human(
             ("DMARC", header_report.dmarc),
         ):
             print(f"    {label}: {result.result if result else 'not reported'}")
+
+    if attachment_verdicts:
+        print("\n  Attachments:")
+        for verdict in attachment_verdicts:
+            status = (
+                "MALICIOUS" if verdict.malicious else "clean" if verdict.checked else "unchecked"
+            )
+            print(f"    - {verdict.attachment.filename}: {status}")
+            for lookup in verdict.lookups:
+                if lookup.attempted:
+                    print(f"        [{lookup.source}] {lookup.detail}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -139,6 +153,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exit with status code 1 if the risk level is at or above this "
         "threshold (useful in CI/pre-commit hooks).",
     )
+    parser.add_argument(
+        "--check-attachments",
+        action="store_true",
+        help="Check any attachments' hashes against VirusTotal and "
+        "MalwareBazaar. Opt-in: this makes real network requests and needs "
+        "VT_API_KEY / MALWAREBAZAAR_API_KEY to actually check anything.",
+    )
     return parser
 
 
@@ -165,11 +186,16 @@ def main(argv: list[str] | None = None) -> int:
             args.api_url, sender_email
         )
 
+    attachment_verdicts: list[AttachmentVerdict] | None = None
+    if args.check_attachments:
+        attachment_verdicts = AttachmentScanner().scan(msg.attachments)
+
     assessment = assess_risk(
         dlp_result=dlp_result,
         phishing_result=phishing_result,
         header_report=header_report,
         sender_is_anomalous=sender_is_anomalous,
+        attachment_verdicts=attachment_verdicts,
     )
 
     if args.format == "json":
@@ -177,7 +203,9 @@ def main(argv: list[str] | None = None) -> int:
     elif args.format == "cef":
         print(to_cef(assessment, source_label, sender_email))
     else:
-        _print_human(assessment, header_report, source_label, anomaly_skip_reason)
+        _print_human(
+            assessment, header_report, source_label, anomaly_skip_reason, attachment_verdicts
+        )
 
     if args.submit:
         client = ApiClient(base_url=args.api_url)

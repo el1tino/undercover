@@ -54,10 +54,19 @@ see that doc's Known Limitations for why.
 
 ## Later additions
 
-Once the core works: attachment scanning against VirusTotal or
-MalwareBazaar, alerting, a basic triage/case-management view, audit
-logging, a browser extension for one-click reporting, a trend
-dashboard, and MITRE ATT&CK tagging on detections.
+Once the core works:
+
+- [x] **Attachment scanning against VirusTotal or MalwareBazaar** ✅
+      implemented. Hash-only lookups (never uploads), folded into
+      `undercover-risk` as an opt-in fifth signal
+      (`--check-attachments`). See
+      [`attachment-scanning.md`](attachment-scanning.md).
+- [ ] Alerting
+- [ ] A basic triage/case-management view
+- [ ] Audit logging
+- [ ] A browser extension for one-click reporting
+- [ ] A trend dashboard
+- [ ] MITRE ATT&CK tagging on detections
 
 ## Engineering hygiene
 

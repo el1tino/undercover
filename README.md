@@ -212,16 +212,49 @@ pip install -e ".[dev,api,phishing,anomaly]"
 pytest tests/risk tests/api/test_risk_routes.py
 ```
 
+## Attachment scanning (VirusTotal + MalwareBazaar)
+
+The first "later addition" from the roadmap: checks each email
+attachment's SHA-256 hash (never the file itself) against VirusTotal
+and MalwareBazaar, folded into `undercover-risk` as an opt-in fifth
+signal.
+
+See [`docs/attachment-scanning.md`](docs/attachment-scanning.md) for
+why it's hash-lookup-only, setup, and limitations (it catches known
+malware, not novel samples).
+
+### Install and configure
+
+```bash
+pip install -e ".[attachments]"
+export VT_API_KEY="your-virustotal-api-key"            # optional
+export MALWAREBAZAAR_API_KEY="your-abuse.ch-auth-key"  # optional
+```
+
+### Use
+
+```bash
+undercover-risk --check-attachments suspect_email.eml
+```
+
+### Develop
+
+```bash
+pip install -e ".[dev,attachments]"
+pytest tests/attachments
+```
+
 ## Project layout
 
 ```
 src/undercover/
-├── cli.py       # CLI entry point (undercover)
-├── dlp/         # Phase 1 -- implemented
-├── phishing/    # Phase 2 -- implemented
-├── api/         # Phase 3 -- implemented
-├── anomaly/     # Phase 4 -- implemented
-└── risk/        # Phase 5 -- implemented
+├── cli.py         # CLI entry point (undercover)
+├── dlp/           # Phase 1 -- implemented
+├── phishing/      # Phase 2 -- implemented
+├── api/           # Phase 3 -- implemented
+├── anomaly/       # Phase 4 -- implemented
+├── attachments/   # VirusTotal + MalwareBazaar hash lookup -- implemented
+└── risk/          # Phase 5 -- implemented
 tests/           # pytest suite, mirrors src/ layout
 docs/            # architecture notes + per-phase design docs
 examples/        # sample inputs for manual testing

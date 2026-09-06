@@ -5,6 +5,7 @@ from __future__ import annotations
 import email
 import email.policy
 import email.utils
+import hashlib
 import html as html_module
 import re
 from dataclasses import dataclass, field
@@ -23,6 +24,16 @@ _ANCHOR_RE = re.compile(
 )
 
 
+@dataclass(frozen=True)
+class Attachment:
+    """A file attached to an email, reduced to what threat-intel lookups need."""
+
+    filename: str
+    content_type: str
+    sha256: str
+    size_bytes: int
+
+
 @dataclass
 class EmailMessage:
     """A parsed email, reduced to the fields the phishing rules need."""
@@ -35,6 +46,7 @@ class EmailMessage:
     body_html: str | None = None
     links: list[str] = field(default_factory=list)
     anchors: list[tuple[str, str]] = field(default_factory=list)  # (visible_text, href)
+    attachments: list[Attachment] = field(default_factory=list)
 
     @classmethod
     def from_raw(cls, raw: str) -> "EmailMessage":
@@ -68,6 +80,26 @@ class EmailMessage:
             for href, visible in _ANCHOR_RE.findall(body_html):
                 anchors.append((_strip_html(visible), href.strip()))
 
+        attachments: list[Attachment] = []
+        for part in msg.iter_attachments():
+            try:
+                payload = part.get_content()
+            except (KeyError, LookupError):
+                continue
+            payload_bytes = (
+                payload.encode("utf-8", errors="replace")
+                if isinstance(payload, str)
+                else payload
+            )
+            attachments.append(
+                Attachment(
+                    filename=part.get_filename() or "unnamed",
+                    content_type=part.get_content_type(),
+                    sha256=hashlib.sha256(payload_bytes).hexdigest(),
+                    size_bytes=len(payload_bytes),
+                )
+            )
+
         return cls(
             sender_display_name=display_name,
             sender_email=sender_email,
@@ -77,6 +109,7 @@ class EmailMessage:
             body_html=body_html,
             links=links,
             anchors=anchors,
+            attachments=attachments,
         )
 
     @property

@@ -1,6 +1,6 @@
 # Architecture
 
-## Current shape (Phases 1-5, all core phases implemented)
+## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning)
 
 ```
 src/undercover/
@@ -10,7 +10,7 @@ src/undercover/
 │   ├── ner.py           # optional spaCy wrapper, lazy-loaded
 │   └── scanner.py       # DLPScanner: orchestrates regex + NER into Findings
 ├── phishing/
-│   ├── email_message.py # EmailMessage.from_raw: parses headers/body/links
+│   ├── email_message.py # EmailMessage.from_raw: parses headers/body/links/attachments
 │   ├── rules.py          # RuleEngine: urgency language, spoofed names, etc.
 │   ├── classifier.py     # optional scikit-learn TF-IDF + LogisticRegression
 │   ├── detector.py        # PhishingDetector: blends rules + ML into a verdict
@@ -28,9 +28,13 @@ src/undercover/
 │   ├── features.py        # extract_sender_features: groups analyses by sender
 │   ├── detector.py         # optional scikit-learn IsolationForest
 │   └── cli.py                # entry point: `undercover-anomaly` (thin API client)
+├── attachments/
+│   ├── virustotal.py       # hash-only lookup against VirusTotal's public API v3
+│   ├── malwarebazaar.py     # hash-only lookup against abuse.ch's MalwareBazaar
+│   └── scanner.py            # AttachmentScanner combines both; summarize_attachment_risk
 └── risk/
     ├── headers.py          # Authentication-Results (SPF/DKIM/DMARC) parsing
-    ├── scoring.py           # assess_risk: fuses DLP+phishing+header+anomaly signals
+    ├── scoring.py           # assess_risk: fuses DLP+phishing+header+anomaly+attachment signals
     ├── export.py             # to_json / to_cef (SIEM export)
     └── cli.py                 # entry point: `undercover-risk` (runs everything on one email)
 ```
@@ -121,6 +125,15 @@ src/undercover/
   independent evidence, rather than an arbitrary `count * weight`
   formula that would need its own separate justification for the
   scaling constant.
+- **Attachment scanning is hash-lookup-only, and opt-in.** VirusTotal
+  and MalwareBazaar both support uploading a file; `undercover.attachments`
+  only ever sends a SHA-256 already computed locally (privacy, and it
+  matches what a fast CLI triage step should do -- not run a malware
+  sandbox). It's also the one risk signal that isn't automatic: every
+  other factor in `assess_risk()` is either local or a read against
+  data this project already collected, but attachment scanning makes a
+  real third-party network call, so `undercover-risk` only does it when
+  `--check-attachments` is passed explicitly.
 
 ## Where later phases plug in
 

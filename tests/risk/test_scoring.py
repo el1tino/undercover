@@ -3,7 +3,7 @@
 from undercover.dlp.scanner import Finding, ScanResult
 from undercover.phishing.detector import PhishingResult
 from undercover.risk.headers import HeaderAuthReport
-from undercover.risk.scoring import assess_risk
+from undercover.risk.scoring import HEADER_WEIGHT, PHISHING_WEIGHT, assess_risk
 
 
 def make_dlp_result(*confidences: float) -> ScanResult:
@@ -30,6 +30,23 @@ def make_phishing_result(combined_score: float, verdict: str = "phishing") -> Ph
         ml_skip_reason=None,
         combined_score=combined_score,
         verdict=verdict,
+    )
+
+
+def make_malicious_attachment_verdict():
+    from undercover.attachments.results import AttachmentVerdict
+    from undercover.phishing.email_message import Attachment
+
+    return AttachmentVerdict(
+        attachment=Attachment(
+            filename="invoice.exe",
+            content_type="application/octet-stream",
+            sha256="a" * 64,
+            size_bytes=1024,
+        ),
+        checked=True,
+        malicious=True,
+        lookups=[],
     )
 
 
@@ -87,6 +104,16 @@ class TestSingleSignal:
         assessment = assess_risk(sender_is_anomalous=False)
         assert assessment.risk_score == 0.0
 
+    def test_attachments_only_malicious(self):
+        assessment = assess_risk(attachment_verdicts=[make_malicious_attachment_verdict()])
+        assert assessment.risk_score == 1.0
+        assert assessment.factors[0].name == "attachments"
+
+    def test_attachments_only_none_present(self):
+        assessment = assess_risk(attachment_verdicts=[])
+        assert assessment.risk_score == 0.0
+        assert "no attachments" in assessment.factors[0].detail
+
 
 class TestMultipleSignals:
     def test_missing_signals_dont_drag_score_down(self):
@@ -98,6 +125,7 @@ class TestMultipleSignals:
             dlp_result=make_dlp_result(1.0),
             header_report=make_header_report(all_pass=False),
             sender_is_anomalous=True,
+            attachment_verdicts=[make_malicious_attachment_verdict()],
         )
         assert only_phishing.risk_score == 1.0
         assert all_signals_all_bad.risk_score == 1.0
@@ -107,8 +135,10 @@ class TestMultipleSignals:
             phishing_result=make_phishing_result(1.0),
             header_report=make_header_report(all_pass=True),
         )
-        # weighted average of phishing=1.0 (weight .45) and header=0.0 (weight .20)
-        expected = (0.45 * 1.0 + 0.20 * 0.0) / (0.45 + 0.20)
+        # weighted average of phishing=1.0 and header=0.0
+        expected = (PHISHING_WEIGHT * 1.0 + HEADER_WEIGHT * 0.0) / (
+            PHISHING_WEIGHT + HEADER_WEIGHT
+        )
         assert abs(assessment.risk_score - expected) < 1e-9
 
     def test_factor_count_matches_signals_supplied(self):

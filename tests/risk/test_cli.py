@@ -107,3 +107,27 @@ def test_anomaly_check_against_unreachable_api_degrades_gracefully(capsys, monke
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "Sender anomaly check: skipped" in captured.out
+
+
+def test_check_attachments_without_api_keys_degrades_gracefully(tmp_path, capsys, monkeypatch):
+    from email.message import EmailMessage as StdlibEmailMessage
+
+    monkeypatch.delenv("VT_API_KEY", raising=False)
+    monkeypatch.delenv("MALWAREBAZAAR_API_KEY", raising=False)
+
+    stdlib_msg = StdlibEmailMessage()
+    stdlib_msg["From"] = "jane@example.com"
+    stdlib_msg["Subject"] = "See attached"
+    stdlib_msg.set_content("See attached invoice.")
+    stdlib_msg.add_attachment(
+        b"fake-content", maintype="application", subtype="octet-stream",
+        filename="invoice.exe",
+    )
+    sample = tmp_path / "sample.eml"
+    sample.write_text(stdlib_msg.as_string())
+
+    exit_code = main(COMMON_FLAGS + ["--check-attachments", str(sample)])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "invoice.exe: unchecked" in captured.out
+    assert "could not be checked" in captured.out
