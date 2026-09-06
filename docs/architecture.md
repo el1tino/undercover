@@ -1,6 +1,11 @@
 # Architecture
 
-## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning, alerting, MITRE ATT&CK tagging, audit logging, case management, and a trend dashboard)
+## Current shape
+
+Every roadmap item -- the five core phases and every "later addition"
+-- is implemented. `src/undercover/` holds the Python package;
+`browser-extension/` (outside `src/`, a separate JS codebase) holds
+the Manifest V3 extension described in docs/browser-extension.md.
 
 ```
 src/undercover/

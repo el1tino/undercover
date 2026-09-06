@@ -6,12 +6,15 @@ pipeline with risk scoring and SIEM export.
 
 ## Status
 
-**All five core phases are implemented**: DLP scanning, phishing
-detection, a central API + database, sender anomaly detection, and
-unified risk scoring with SIEM export. See
-[`docs/roadmap.md`](docs/roadmap.md) for what's next (the "later
-additions" -- attachment scanning, alerting, a dashboard, and so on)
-and why the phases were ordered the way they were.
+**Everything in [`docs/roadmap.md`](docs/roadmap.md) is implemented**:
+the five core phases (DLP scanning, phishing detection, a central
+API + database, sender anomaly detection, unified risk scoring with
+SIEM export) and every "later addition" (attachment scanning against
+VirusTotal/MalwareBazaar, webhook/Slack alerting, MITRE ATT&CK
+tagging, audit logging, a triage case-management view, a trend
+dashboard, and a browser extension for one-click reporting). The
+roadmap doc has the full narrative of how each piece was built and
+why, in order.
 
 ## Phase 1: DLP scanner
 
@@ -342,6 +345,22 @@ pip install -e ".[dev,api]"
 pytest tests/api/test_ui_routes.py tests/api/test_report_routes.py
 ```
 
+## Browser extension
+
+The last "later addition": a Manifest V3 Chrome/Edge extension for
+one-click phishing reporting. Paste an email's raw source (or capture
+the current page's visible text as a best-effort fallback) into the
+popup, click Report, and it POSTs to `/report/email` and shows the
+verdict right there -- no local Python or CLI needed to use it.
+
+See [`docs/browser-extension.md`](docs/browser-extension.md) for
+setup, why it can reach `localhost` without CORS trouble, and how it
+was verified end-to-end with Playwright driving a real Chromium load.
+
+```bash
+# chrome://extensions -> Developer mode -> Load unpacked -> browser-extension/
+```
+
 ## Project layout
 
 ```
@@ -354,6 +373,7 @@ src/undercover/
 ├── attachments/   # VirusTotal + MalwareBazaar hash lookup -- implemented
 ├── alerting/      # webhook + Slack notifications -- implemented
 └── risk/          # Phase 5 -- implemented
+browser-extension/ # Manifest V3 one-click reporting extension (separate JS codebase)
 tests/           # pytest suite, mirrors src/ layout
 docs/            # architecture notes + per-phase design docs
 examples/        # sample inputs for manual testing

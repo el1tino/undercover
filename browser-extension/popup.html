@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>undercover</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <span class="brand">undercover</span>
+    <button id="settings-toggle" title="API settings" aria-label="API settings">&#9881;</button>
+  </header>
+
+  <section id="settings" hidden>
+    <label for="api-url">API URL</label>
+    <input id="api-url" type="text" placeholder="http://127.0.0.1:8000">
+    <button id="save-settings">Save</button>
+    <p id="settings-status" class="hint"></p>
+  </section>
+
+  <main>
+    <div class="field-row">
+      <label for="email-text">Email content</label>
+      <button id="capture-page" class="link-button">Use current page text</button>
+    </div>
+    <textarea id="email-text" rows="8" placeholder="Paste the raw email source here (in Gmail: Show original; in Outlook: View message source), or click &quot;Use current page text&quot; for a best-effort capture."></textarea>
+
+    <button id="report-button">Report to undercover</button>
+
+    <div id="result" hidden>
+      <div class="result-header">
+        <span id="result-level" class="badge"></span>
+        <span id="result-score"></span>
+      </div>
+      <ul id="result-factors"></ul>
+      <a id="result-link" href="#" target="_blank">Open case in dashboard &rarr;</a>
+    </div>
+
+    <p id="error" class="error" hidden></p>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

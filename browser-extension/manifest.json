@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "undercover: Report Phishing",
+  "version": "0.1.0",
+  "description": "One-click phishing reporting for the undercover security toolkit. Sends a pasted email (or the current page's visible text) to your undercover API for full DLP + phishing + header + anomaly analysis.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"]
+}

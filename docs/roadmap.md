@@ -86,7 +86,14 @@ Once the core works:
       See [`case-management-and-dashboard.md`](case-management-and-dashboard.md),
       which also covers the new `POST /report/email` endpoint these
       two views are built on.
-- [ ] A browser extension for one-click reporting
+- [x] **A browser extension for one-click reporting** ✅ implemented.
+      A Manifest V3 Chrome/Edge extension (`browser-extension/`) that
+      posts a pasted (or best-effort page-captured) email to
+      `POST /report/email` and shows the verdict in its popup. See
+      [`browser-extension.md`](browser-extension.md).
+
+**All roadmap items -- the five core phases and every "later
+addition" -- are now implemented.**
 
 ## Engineering hygiene
 
