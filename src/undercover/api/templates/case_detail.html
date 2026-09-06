@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Case #{{ case.id }} -- undercover{% endblock %}
+{% block content %}
+<p><a href="/ui/cases">&larr; back to cases</a></p>
+<h1>Case #{{ case.id }}</h1>
+
+<div class="panel">
+  <p><strong>Source:</strong> {{ case.source }}</p>
+  <p><strong>Sender:</strong> {{ case.sender_email or "unknown" }}</p>
+  <p><strong>Risk:</strong>
+    <span class="badge {{ case.risk_level }}">{{ case.risk_level }}</span>
+    ({{ "%.2f"|format(case.risk_score) }})
+  </p>
+  <p><strong>Status:</strong> <span class="badge status">{{ case.status }}</span></p>
+  <p><strong>Created:</strong> {{ case.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</p>
+
+  <p>
+    {% for s in statuses %}
+    {% if s != case.status %}
+    <form class="status-form" method="post" action="/ui/cases/{{ case.id }}/status">
+      <input type="hidden" name="status" value="{{ s }}">
+      <button type="submit">Mark as {{ s }}</button>
+    </form>
+    {% endif %}
+    {% endfor %}
+  </p>
+</div>
+
+<h2>Factors</h2>
+{% if case.factors %}
+<table>
+  <thead>
+    <tr><th>Factor</th><th>Weight</th><th>Value</th><th>Detail</th></tr>
+  </thead>
+  <tbody>
+    {% for f in case.factors %}
+    <tr>
+      <td>{{ f.name }}</td>
+      <td>{{ "%.2f"|format(f.weight) }}</td>
+      <td>{{ "%.2f"|format(f.value) }}</td>
+      <td class="factor-detail">{{ f.detail }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">No signals were available when this case was assessed.</p>
+{% endif %}
+{% endblock %}

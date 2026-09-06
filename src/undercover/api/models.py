@@ -115,6 +115,7 @@ class RiskAssessment(Base):
     )
     risk_score: Mapped[float] = mapped_column(Float)
     risk_level: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(20), default="open")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow
     )

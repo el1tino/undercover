@@ -8,8 +8,15 @@ so the CLI client can submit `{"source": ..., **result.to_dict()}` directly.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# A RiskAssessment doubles as this project's "case" for triage purposes --
+# see docs/case-management-and-dashboard.md for why no separate Case table.
+CASE_STATUSES: tuple[str, ...] = ("open", "investigating", "resolved", "false_positive")
+CaseStatus = Literal["open", "investigating", "resolved", "false_positive"]
+RISK_LEVELS: tuple[str, ...] = ("low", "medium", "high", "critical")
 
 
 class DlpFindingIn(BaseModel):
@@ -157,6 +164,7 @@ class RiskAssessmentOut(BaseModel):
     sender_email: str | None
     risk_score: float
     risk_level: str
+    status: CaseStatus
     created_at: datetime
     factors: list[RiskFactorOut] = Field(default_factory=list)
 
@@ -169,7 +177,12 @@ class RiskAssessmentSummary(BaseModel):
     sender_email: str | None
     risk_score: float
     risk_level: str
+    status: CaseStatus
     created_at: datetime
+
+
+class RiskAssessmentStatusUpdate(BaseModel):
+    status: CaseStatus
 
 
 class AuditLogEntryOut(BaseModel):
@@ -182,3 +195,22 @@ class AuditLogEntryOut(BaseModel):
     resource_id: int | None
     source_ip: str | None
     detail: str | None
+
+
+class EmailReportRequest(BaseModel):
+    source: str = Field(..., max_length=500)
+    raw_email: str
+    use_ner: bool = False
+    use_ml: bool = True
+    check_anomaly: bool = True
+
+
+class EmailReportResponse(RiskAssessmentOut):
+    """POST /report/email persists both a PhishingAnalysis and a
+    RiskAssessment (see undercover.api.routes.report) -- this returns the
+    RiskAssessment's fields plus a pointer to the phishing analysis and
+    its rule hits, so a caller (e.g. the browser extension) can show why
+    the email was flagged without a second request."""
+
+    phishing_analysis_id: int
+    rule_hits: list[PhishingRuleHitOut] = Field(default_factory=list)

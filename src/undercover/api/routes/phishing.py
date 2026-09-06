@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import logging
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from undercover.api import models, schemas
-from undercover.api.audit import record_audit_event
 from undercover.api.database import get_db
-
-logger = logging.getLogger(__name__)
+from undercover.api.phishing_persistence import persist_phishing_analysis
 
 router = APIRouter(prefix="/phishing", tags=["phishing"])
 
@@ -20,35 +16,9 @@ router = APIRouter(prefix="/phishing", tags=["phishing"])
 def create_analysis(
     payload: schemas.PhishingAnalysisCreate, request: Request, db: Session = Depends(get_db)
 ) -> models.PhishingAnalysis:
-    analysis = models.PhishingAnalysis(
-        source=payload.source,
-        sender_email=payload.sender_email,
-        verdict=payload.verdict,
-        combined_score=payload.combined_score,
-        rule_score=payload.rule_score,
-        ml_score=payload.ml_score,
-        ml_skip_reason=payload.ml_skip_reason,
+    return persist_phishing_analysis(
+        db, request, payload, source=payload.source, sender_email=payload.sender_email
     )
-    analysis.rule_hits = [
-        models.PhishingRuleHit(**hit.model_dump()) for hit in payload.rule_hits
-    ]
-    db.add(analysis)
-    db.commit()
-    db.refresh(analysis)
-
-    try:
-        record_audit_event(
-            db,
-            action="phishing_analysis.created",
-            resource_type="phishing_analysis",
-            resource_id=analysis.id,
-            source_ip=request.client.host if request.client else None,
-            detail=f"source={analysis.source!r}, verdict={analysis.verdict!r}",
-        )
-    except Exception:
-        logger.exception("Audit logging failed for phishing analysis id=%s", analysis.id)
-
-    return analysis
 
 
 @router.get("/analyses", response_model=list[schemas.PhishingAnalysisSummary])

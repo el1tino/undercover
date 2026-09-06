@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Cases -- undercover{% endblock %}
+{% block content %}
+<h1>Cases</h1>
+
+<div class="filters">
+  Status:
+  <a href="/ui/cases" class="{% if not status_filter %}active{% endif %}">all</a>
+  {% for s in statuses %}
+  <a href="/ui/cases?status={{ s }}{% if level_filter %}&risk_level={{ level_filter }}{% endif %}"
+     class="{% if status_filter == s %}active{% endif %}">{{ s }}</a>
+  {% endfor %}
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  Risk level:
+  <a href="/ui/cases{% if status_filter %}?status={{ status_filter }}{% endif %}" class="{% if not level_filter %}active{% endif %}">all</a>
+  {% for lvl in risk_levels %}
+  <a href="/ui/cases?{% if status_filter %}status={{ status_filter }}&{% endif %}risk_level={{ lvl }}"
+     class="{% if level_filter == lvl %}active{% endif %}">{{ lvl }}</a>
+  {% endfor %}
+</div>
+
+{% if cases %}
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Source</th>
+      <th>Sender</th>
+      <th>Risk</th>
+      <th>Score</th>
+      <th>Status</th>
+      <th>Created</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for case in cases %}
+    <tr>
+      <td><a href="/ui/cases/{{ case.id }}">#{{ case.id }}</a></td>
+      <td>{{ case.source }}</td>
+      <td>{{ case.sender_email or "--" }}</td>
+      <td><span class="badge {{ case.risk_level }}">{{ case.risk_level }}</span></td>
+      <td>{{ "%.2f"|format(case.risk_score) }}</td>
+      <td><span class="badge status">{{ case.status }}</span></td>
+      <td>{{ case.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">No cases match this filter.</p>
+{% endif %}
+{% endblock %}

@@ -127,7 +127,7 @@ class TestAuditFailureIsolation:
             raise RuntimeError("simulated audit logging failure")
 
         monkeypatch.setattr(
-            "undercover.api.routes.phishing.record_audit_event",
+            "undercover.api.phishing_persistence.record_audit_event",
             exploding_record_audit_event,
         )
         resp = client.post(
@@ -147,7 +147,7 @@ class TestAuditFailureIsolation:
             raise RuntimeError("simulated audit logging failure")
 
         monkeypatch.setattr(
-            "undercover.api.routes.risk.record_audit_event", exploding_record_audit_event
+            "undercover.api.risk_persistence.record_audit_event", exploding_record_audit_event
         )
         resp = client.post(
             "/risk/assessments",

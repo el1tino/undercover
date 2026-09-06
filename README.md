@@ -315,6 +315,33 @@ undercover --submit examples/sample_emails/leaky_email.txt
 curl http://127.0.0.1:8000/audit/log
 ```
 
+## Case management, trend dashboard, and server-side reporting
+
+Two more "later additions," built together: `RiskAssessment` now has
+a triage `status` (open/investigating/resolved/false_positive), with
+server-rendered pages to view and change it, plus a dashboard of
+aggregate stats -- all plain HTML/CSS, no client-side JS or CDN. Both
+are powered by a new `POST /report/email` endpoint that runs the full
+local analysis pipeline (DLP + phishing + headers + anomaly check)
+server-side on raw email text, which is also what the browser
+extension below talks to.
+
+See [`docs/case-management-and-dashboard.md`](docs/case-management-and-dashboard.md).
+
+```bash
+undercover-api   # then open http://127.0.0.1:8000/ui/dashboard and /ui/cases
+
+# Report an email for full analysis without the CLI:
+curl -X POST http://127.0.0.1:8000/report/email \
+  -H "Content-Type: application/json" \
+  -d '{"source": "reported.eml", "raw_email": "<raw email text>"}'
+```
+
+```bash
+pip install -e ".[dev,api]"
+pytest tests/api/test_ui_routes.py tests/api/test_report_routes.py
+```
+
 ## Project layout
 
 ```

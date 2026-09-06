@@ -1,6 +1,6 @@
 # Architecture
 
-## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning, alerting, MITRE ATT&CK tagging, and audit logging)
+## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning, alerting, MITRE ATT&CK tagging, audit logging, case management, and a trend dashboard)
 
 ```
 src/undercover/
@@ -18,14 +18,17 @@ src/undercover/
 │   ├── cli.py              # entry point: `undercover-phish`
 │   └── train_cli.py        # entry point: `undercover-phish-train`
 ├── api/
-│   ├── client.py          # ApiClient: httpx-only, used by --submit in every CLI
-│   ├── database.py         # SQLAlchemy engine/session, SQLite by default
-│   ├── models.py            # DlpScan/Finding, PhishingAnalysis/RuleHit, RiskAssessment/Factor, AuditLogEntry
-│   ├── schemas.py            # Pydantic request/response shapes
-│   ├── audit.py               # record_audit_event, called from each POST route
-│   ├── routes/                  # /dlp/scans, /phishing/analyses, /anomaly/senders, /risk/assessments, /audit/log
-│   ├── server.py                # FastAPI app (create_app, lifespan -> init_db)
-│   └── serve_cli.py              # entry point: `undercover-api`
+│   ├── client.py                 # ApiClient: httpx-only, used by --submit in every CLI
+│   ├── database.py                # SQLAlchemy engine/session, SQLite by default
+│   ├── models.py                   # DlpScan/Finding, PhishingAnalysis/RuleHit, RiskAssessment/Factor, AuditLogEntry
+│   ├── schemas.py                   # Pydantic request/response shapes
+│   ├── audit.py                      # record_audit_event, called from every mutating route
+│   ├── risk_persistence.py            # persist_risk_assessment: shared by /risk/assessments and /report/email
+│   ├── phishing_persistence.py         # persist_phishing_analysis: shared the same way
+│   ├── templates/                       # Jinja2 templates for the /ui/* views (no external CDN)
+│   ├── routes/                           # dlp, phishing, anomaly, risk, audit, report, ui
+│   ├── server.py                          # FastAPI app (create_app, lifespan -> init_db)
+│   └── serve_cli.py                        # entry point: `undercover-api`
 ├── anomaly/
 │   ├── features.py        # extract_sender_features: groups analyses by sender
 │   ├── detector.py         # optional scikit-learn IsolationForest
@@ -141,6 +144,37 @@ src/undercover/
   message *content*, not adversary *behavior*, so there's no honest
   ATT&CK mapping for them, and forcing one would overclaim what the
   tool's signals actually represent.
+- **A case is a `RiskAssessment` with a `status`, not a separate
+  table.** `RiskAssessment` already has everything a triage view
+  needs (source, sender, score, factors); adding `status` is the same
+  small-additive-change pattern as `sender_email` on `PhishingAnalysis`
+  for Phase 4. A real `Case` entity would only be justified by needing
+  to group multiple assessments under one investigation, which isn't
+  a requirement today.
+- **`persist_risk_assessment` and `persist_phishing_analysis` are
+  shared between the client-submits-a-computed-result path
+  (`POST /risk/assessments`, `POST /phishing/analyses`) and the
+  server-computes-it-itself path (`POST /report/email`).** Both
+  accept a duck-typed Protocol (`AssessmentLike`/`PhishingResultLike`)
+  rather than a concrete class, so neither `undercover.api` nor
+  `undercover.risk`/`undercover.phishing` needs to import the other's
+  types. This mirrors `undercover.alerting.build_alert`'s existing
+  Protocol, extended to a second use.
+- **`POST /report/email` persists both a `PhishingAnalysis` and a
+  `RiskAssessment`, not just the assessment.** An earlier version only
+  persisted the assessment being reported on; manual testing caught
+  that this meant a reported sender never fed Phase 4's anomaly
+  detection (which reads `PhishingAnalysis` rows) or the dashboard's
+  MITRE technique counts. Persisting both makes a reported email as
+  "real" to the rest of the system as one submitted via the CLI --
+  verified by a test that reports the same sender repeatedly and
+  confirms `GET /anomaly/senders` later flags them.
+- **The dashboard and case views are server-rendered Jinja2, not a
+  client-side app.** No new JS build step, no CDN dependency (the
+  project's established policy against unnecessary dependencies
+  extended to the frontend), and the case status form works as a
+  plain HTML `POST` + redirect -- it functions with JavaScript
+  disabled, which a security-tool admin view arguably should.
 - **Audit logging is explicit per-route calls, not middleware.**
   Middleware would log every request uniformly, but a `GET` doesn't
   need an audit trail the way a state-changing `POST` does, and

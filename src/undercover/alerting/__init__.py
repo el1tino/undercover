@@ -11,12 +11,14 @@ standalone via `undercover-risk --alert-threshold`. See
 docs/alerting.md and docs/roadmap.md.
 """
 
-from undercover.alerting.alert import Alert, build_alert
+from undercover.alerting.alert import Alert, AssessmentLike, FactorLike, build_alert
 from undercover.alerting.channels import AlertResult, SlackChannel, WebhookChannel
 from undercover.alerting.manager import AlertManager
 
 __all__ = [
     "Alert",
+    "AssessmentLike",
+    "FactorLike",
     "build_alert",
     "AlertResult",
     "SlackChannel",

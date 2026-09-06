@@ -75,9 +75,18 @@ Once the core works:
       `/dlp/scans`, `/phishing/analyses`, and `/risk/assessments`
       writes an append-only entry (what, when, source IP), queryable
       via `GET /audit/log`. See [`audit-logging.md`](audit-logging.md).
-- [ ] A basic triage/case-management view
+- [x] **A basic triage/case-management view** ✅ implemented.
+      `RiskAssessment.status` (open/investigating/resolved/false_positive)
+      plus server-rendered `GET /ui/cases` and `GET /ui/cases/{id}`
+      views with a status-change form (Jinja2, no external CDN).
+- [x] **A trend dashboard** ✅ implemented. `GET /ui/dashboard`:
+      verdict/risk-level/status distributions, MITRE technique
+      frequency, currently-anomalous senders, recent cases -- all
+      server-computed aggregates, no client-side JS.
+      See [`case-management-and-dashboard.md`](case-management-and-dashboard.md),
+      which also covers the new `POST /report/email` endpoint these
+      two views are built on.
 - [ ] A browser extension for one-click reporting
-- [ ] A trend dashboard
 
 ## Engineering hygiene
 
