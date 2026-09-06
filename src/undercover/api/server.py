@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from undercover.api.database import init_db
-from undercover.api.routes import anomaly, dlp, phishing
+from undercover.api.routes import anomaly, dlp, phishing, risk
 
 
 @asynccontextmanager
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     app.include_router(dlp.router)
     app.include_router(phishing.router)
     app.include_router(anomaly.router)
+    app.include_router(risk.router)
 
     @app.get("/health", tags=["meta"])
     def health() -> dict:

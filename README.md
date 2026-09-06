@@ -6,11 +6,12 @@ pipeline with risk scoring and SIEM export.
 
 ## Status
 
-**Phases 1 (DLP scanner), 2 (phishing detection), 3 (central API +
-database), and 4 (anomaly detection) are implemented.** Phase 5 is
-scaffolded as a stub package with its design documented in
-[`docs/roadmap.md`](docs/roadmap.md); see that file for what's coming
-next and why the phases are ordered the way they are.
+**All five core phases are implemented**: DLP scanning, phishing
+detection, a central API + database, sender anomaly detection, and
+unified risk scoring with SIEM export. See
+[`docs/roadmap.md`](docs/roadmap.md) for what's next (the "later
+additions" -- attachment scanning, alerting, a dashboard, and so on)
+and why the phases were ordered the way they were.
 
 ## Phase 1: DLP scanner
 
@@ -168,6 +169,49 @@ pip install -e ".[dev,api,anomaly]"
 pytest tests/anomaly tests/api/test_anomaly_routes.py
 ```
 
+## Phase 5: Risk scoring, header analysis, SIEM export
+
+Ties the earlier phases together into one command: `undercover-risk`
+runs the DLP scanner and phishing detector on an email, parses its
+SPF/DKIM/DMARC `Authentication-Results` header, checks whether the
+sender is currently flagged anomalous, and fuses all of that into one
+risk score, level, and CEF/JSON export a SIEM can ingest.
+
+See [`docs/phase5-risk-scoring.md`](docs/phase5-risk-scoring.md) for
+the scoring model, the CEF format, and why header validation means
+parsing an existing header rather than live DNS/cryptographic checks.
+
+### Install
+
+```bash
+pip install -e .   # core (DLP + phishing rules + headers + CEF/JSON) needs no extras
+pip install -e ".[phishing,api,anomaly]"  # + ML classifier, --submit, anomaly check
+```
+
+### Use
+
+```bash
+# Human-readable risk assessment
+undercover-risk examples/sample_emails/phishing_example.eml
+
+# SIEM-friendly export
+undercover-risk --format cef examples/sample_emails/phishing_example.eml
+undercover-risk --format json examples/sample_emails/phishing_example.eml
+
+# Store the assessment via the API
+undercover-risk --submit examples/sample_emails/phishing_example.eml
+
+# CI/pre-commit gate
+undercover-risk --fail-on-risk high examples/sample_emails/phishing_example.eml
+```
+
+### Develop
+
+```bash
+pip install -e ".[dev,api,phishing,anomaly]"
+pytest tests/risk tests/api/test_risk_routes.py
+```
+
 ## Project layout
 
 ```
@@ -177,7 +221,7 @@ src/undercover/
 ├── phishing/    # Phase 2 -- implemented
 ├── api/         # Phase 3 -- implemented
 ├── anomaly/     # Phase 4 -- implemented
-└── risk/        # Phase 5 -- planned
+└── risk/        # Phase 5 -- implemented
 tests/           # pytest suite, mirrors src/ layout
 docs/            # architecture notes + per-phase design docs
 examples/        # sample inputs for manual testing

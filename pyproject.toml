@@ -30,6 +30,7 @@ undercover-phish = "undercover.phishing.cli:main"
 undercover-phish-train = "undercover.phishing.train_cli:main"
 undercover-api = "undercover.api.serve_cli:main"
 undercover-anomaly = "undercover.anomaly.cli:main"
+undercover-risk = "undercover.risk.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

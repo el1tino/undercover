@@ -1,8 +1,10 @@
-"""SQLAlchemy ORM models for stored DLP scans and phishing analyses.
+"""SQLAlchemy ORM models for stored DLP scans, phishing analyses, and
+unified risk assessments.
 
-These mirror the DLP `Finding`/`ScanResult` and phishing `PhishingResult`
-shapes from Phases 1-2 (see undercover.dlp.scanner and
-undercover.phishing.detector) but persisted rather than printed.
+These mirror the DLP `Finding`/`ScanResult`, phishing `PhishingResult`,
+and risk `RiskAssessment`/`RiskFactor` shapes from Phases 1-2 and 5
+(see undercover.dlp.scanner, undercover.phishing.detector, and
+undercover.risk.scoring) but persisted rather than printed.
 """
 
 from __future__ import annotations
@@ -91,3 +93,35 @@ class PhishingRuleHit(Base):
     weight: Mapped[float] = mapped_column(Float)
 
     analysis: Mapped["PhishingAnalysis"] = relationship(back_populates="rule_hits")
+
+
+class RiskAssessment(Base):
+    __tablename__ = "risk_assessments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source: Mapped[str] = mapped_column(String(500))
+    sender_email: Mapped[str | None] = mapped_column(
+        String(320), nullable=True, index=True
+    )
+    risk_score: Mapped[float] = mapped_column(Float)
+    risk_level: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+
+    factors: Mapped[list["RiskFactor"]] = relationship(
+        back_populates="assessment", cascade="all, delete-orphan"
+    )
+
+
+class RiskFactor(Base):
+    __tablename__ = "risk_factors"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    assessment_id: Mapped[int] = mapped_column(ForeignKey("risk_assessments.id"))
+    name: Mapped[str] = mapped_column(String(50))
+    weight: Mapped[float] = mapped_column(Float)
+    value: Mapped[float] = mapped_column(Float)
+    detail: Mapped[str] = mapped_column(Text)
+
+    assessment: Mapped["RiskAssessment"] = relationship(back_populates="factors")

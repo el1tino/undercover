@@ -38,12 +38,19 @@ don't fit a known rule but still look wrong. See
 relationship-graph features are still open -- see that doc's Known
 Limitations.
 
-## Phase 5 — Risk scoring, header analysis, SIEM export
+## Phase 5 — Risk scoring, header analysis, SIEM export ✅ implemented
 
 Tie it together: SPF/DKIM/DMARC header validation, a unified risk
 score combining all the signals from earlier phases, and export in
 SIEM-friendly formats (CEF or JSON) so it reads as something that
-could plug into a real SOC pipeline.
+could plug into a real SOC pipeline. See
+[`phase5-risk-scoring.md`](phase5-risk-scoring.md). Note: header
+validation parses the Authentication-Results header a message already
+carries rather than performing live DNS/cryptographic verification --
+see that doc's Known Limitations for why.
+
+**All five core phases are now implemented.** What's left is the
+"later additions" below.
 
 ## Later additions
 

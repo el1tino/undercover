@@ -1,6 +1,6 @@
 # Architecture
 
-## Current shape (Phases 1-4)
+## Current shape (Phases 1-5, all core phases implemented)
 
 ```
 src/undercover/
@@ -17,18 +17,22 @@ src/undercover/
 │   ├── cli.py              # entry point: `undercover-phish`
 │   └── train_cli.py        # entry point: `undercover-phish-train`
 ├── api/
-│   ├── client.py          # ApiClient: httpx-only, used by --submit in both CLIs
+│   ├── client.py          # ApiClient: httpx-only, used by --submit in every CLI
 │   ├── database.py         # SQLAlchemy engine/session, SQLite by default
-│   ├── models.py            # DlpScan/DlpFinding, PhishingAnalysis/PhishingRuleHit
+│   ├── models.py            # DlpScan/Finding, PhishingAnalysis/RuleHit, RiskAssessment/Factor
 │   ├── schemas.py            # Pydantic request/response shapes
-│   ├── routes/                # /dlp/scans, /phishing/analyses, /anomaly/senders
+│   ├── routes/                 # /dlp/scans, /phishing/analyses, /anomaly/senders, /risk/assessments
 │   ├── server.py               # FastAPI app (create_app, lifespan -> init_db)
 │   └── serve_cli.py             # entry point: `undercover-api`
 ├── anomaly/
 │   ├── features.py        # extract_sender_features: groups analyses by sender
 │   ├── detector.py         # optional scikit-learn IsolationForest
 │   └── cli.py                # entry point: `undercover-anomaly` (thin API client)
-└── risk/                 # Phase 5 stub
+└── risk/
+    ├── headers.py          # Authentication-Results (SPF/DKIM/DMARC) parsing
+    ├── scoring.py           # assess_risk: fuses DLP+phishing+header+anomaly signals
+    ├── export.py             # to_json / to_cef (SIEM export)
+    └── cli.py                 # entry point: `undercover-risk` (runs everything on one email)
 ```
 
 ### Design decisions
@@ -94,6 +98,29 @@ src/undercover/
   enable this.** It wasn't needed until Phase 4 needed a join key to
   group analyses by sender; adding it to the existing model/schema/
   client was a small, additive change rather than a redesign.
+- **Every risk signal in Phase 5 is optional, and missing signals don't
+  drag the score down.** `assess_risk()` takes DLP/phishing/header/
+  anomaly inputs as `Optional` and computes a weighted average over
+  only the signals actually supplied (normalizing by their combined
+  weight) rather than treating a missing signal as zero. A message
+  scored on phishing alone maxes out identically to one where every
+  signal maxes out -- the same graceful-degradation principle used for
+  missing *dependencies* elsewhere in the project, applied here to
+  missing *signals*.
+- **Header authentication is parsed, not independently verified.**
+  `undercover.risk.headers` reads the `Authentication-Results` header
+  a message already carries (RFC 8601) rather than performing DNS
+  lookups or DKIM cryptographic verification itself -- doing either
+  properly requires information (the true connecting SMTP IP, the
+  exact canonicalized original bytes) this tool doesn't have when
+  analyzing a `.eml` file after the fact. This is the same approach
+  Gmail's and Outlook's own phishing warnings use internally.
+- **DLP's contribution to the risk score uses noisy-OR, not a linear
+  scale.** `1 - ∏(1 - confidence_i)` over all findings is "the
+  probability at least one finding is real," treating each finding as
+  independent evidence, rather than an arbitrary `count * weight`
+  formula that would need its own separate justification for the
+  scaling constant.
 
 ## Where later phases plug in
 
@@ -112,6 +139,10 @@ src/undercover/
   why it depended on Phase 3 existing first -- and why it needed one
   small addition to Phase 3's schema (`PhishingAnalysis.sender_email`)
   to have a join key at all.
-- **Phase 5 (risk scoring)** is a fusion layer: it reads DLP findings,
-  phishing scores, anomaly scores, and header-auth results for a
-  message and produces one number plus a CEF/JSON export.
+- **Phase 5 (risk scoring)** is the fusion layer the earlier phases were
+  building toward: `undercover-risk` runs the Phase 1 DLP scanner and
+  Phase 2 phishing detector locally, parses headers itself, checks
+  Phase 4's anomaly report over the API, and produces one risk score
+  plus a CEF/JSON export -- the single command a SOC analyst would
+  actually run against a suspicious email, rather than four separate
+  tools they'd have to reconcile by hand.

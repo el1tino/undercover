@@ -119,3 +119,47 @@ class AnomalySenderResult(BaseModel):
 class AnomalyReportOut(BaseModel):
     results: list[AnomalySenderResult] = Field(default_factory=list)
     skip_reason: str | None = None
+
+
+class RiskFactorIn(BaseModel):
+    name: str
+    weight: float
+    value: float
+    detail: str
+
+
+class RiskFactorOut(RiskFactorIn):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
+class RiskAssessmentCreate(BaseModel):
+    source: str = Field(..., max_length=500)
+    sender_email: str | None = Field(default=None, max_length=320)
+    risk_score: float
+    risk_level: str
+    factors: list[RiskFactorIn] = Field(default_factory=list)
+
+
+class RiskAssessmentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    source: str
+    sender_email: str | None
+    risk_score: float
+    risk_level: str
+    created_at: datetime
+    factors: list[RiskFactorOut] = Field(default_factory=list)
+
+
+class RiskAssessmentSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    source: str
+    sender_email: str | None
+    risk_score: float
+    risk_level: str
+    created_at: datetime

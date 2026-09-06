@@ -67,6 +67,14 @@ class ApiClient:
         """Fetch Phase 4's per-sender anomaly report."""
         return self._get("/anomaly/senders", params={"contamination": contamination})
 
+    def submit_risk_assessment(
+        self, source: str, assessment, sender_email: Optional[str] = None
+    ) -> dict:
+        """Submit a undercover.risk.scoring.RiskAssessment. Returns the
+        created record."""
+        payload = {"source": source, "sender_email": sender_email, **assessment.to_dict()}
+        return self._post("/risk/assessments", payload)
+
     def _post(self, path: str, payload: dict) -> dict:
         if not is_available():
             raise ApiClientError(load_error())

@@ -108,6 +108,38 @@ class TestAvailable:
         assert captured["url"] == "http://example.test/anomaly/senders"
         assert captured["params"] == {"contamination": 0.3}
 
+    def test_submit_risk_assessment_posts_expected_payload(self, monkeypatch):
+        import httpx
+
+        captured = {}
+
+        class FakeResponse:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"id": 3}
+
+        def fake_post(url, json=None, timeout=None):
+            captured["url"] = url
+            captured["json"] = json
+            return FakeResponse()
+
+        monkeypatch.setattr(httpx, "post", fake_post)
+
+        class DummyAssessment:
+            def to_dict(self) -> dict:
+                return {"risk_score": 0.5, "risk_level": "medium", "factors": []}
+
+        api_client = ApiClient(base_url="http://example.test")
+        result = api_client.submit_risk_assessment(
+            "mail.eml", DummyAssessment(), sender_email="jane@example.com"
+        )
+        assert result == {"id": 3}
+        assert captured["url"] == "http://example.test/risk/assessments"
+        assert captured["json"]["sender_email"] == "jane@example.com"
+        assert captured["json"]["risk_level"] == "medium"
+
     def test_connection_error_raises_api_client_error(self, monkeypatch):
         import httpx
 
