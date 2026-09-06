@@ -135,3 +135,24 @@ class RiskFactor(Base):
     detail: Mapped[str] = mapped_column(Text)
 
     assessment: Mapped["RiskAssessment"] = relationship(back_populates="factors")
+
+
+class AuditLogEntry(Base):
+    """An append-only record of a mutating API action.
+
+    There's no authentication in this API, so this can't record *who*
+    did something in any identity sense -- only *what* happened,
+    *when*, and from *which* source IP. See undercover.api.audit.
+    """
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+    action: Mapped[str] = mapped_column(String(50))
+    resource_type: Mapped[str] = mapped_column(String(50))
+    resource_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    source_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True)

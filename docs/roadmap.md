@@ -71,8 +71,11 @@ Once the core works:
       DLP findings and the anomaly/header signals are deliberately left
       untagged since they don't represent a discrete adversary
       technique. See [`mitre-attack-tagging.md`](mitre-attack-tagging.md).
+- [x] **Audit logging** ✅ implemented. Every submission to
+      `/dlp/scans`, `/phishing/analyses`, and `/risk/assessments`
+      writes an append-only entry (what, when, source IP), queryable
+      via `GET /audit/log`. See [`audit-logging.md`](audit-logging.md).
 - [ ] A basic triage/case-management view
-- [ ] Audit logging
 - [ ] A browser extension for one-click reporting
 - [ ] A trend dashboard
 

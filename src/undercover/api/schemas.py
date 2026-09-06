@@ -170,3 +170,15 @@ class RiskAssessmentSummary(BaseModel):
     risk_score: float
     risk_level: str
     created_at: datetime
+
+
+class AuditLogEntryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    timestamp: datetime
+    action: str
+    resource_type: str
+    resource_id: int | None
+    source_ip: str | None
+    detail: str | None

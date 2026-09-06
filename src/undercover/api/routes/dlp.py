@@ -2,18 +2,23 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from undercover.api import models, schemas
+from undercover.api.audit import record_audit_event
 from undercover.api.database import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dlp", tags=["dlp"])
 
 
 @router.post("/scans", response_model=schemas.DlpScanOut, status_code=201)
 def create_scan(
-    payload: schemas.DlpScanCreate, db: Session = Depends(get_db)
+    payload: schemas.DlpScanCreate, request: Request, db: Session = Depends(get_db)
 ) -> models.DlpScan:
     scan = models.DlpScan(
         source=payload.source,
@@ -26,6 +31,19 @@ def create_scan(
     db.add(scan)
     db.commit()
     db.refresh(scan)
+
+    try:
+        record_audit_event(
+            db,
+            action="dlp_scan.created",
+            resource_type="dlp_scan",
+            resource_id=scan.id,
+            source_ip=request.client.host if request.client else None,
+            detail=f"source={scan.source!r}, findings={scan.finding_count}",
+        )
+    except Exception:
+        logger.exception("Audit logging failed for dlp scan id=%s", scan.id)
+
     return scan
 
 

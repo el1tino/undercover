@@ -300,6 +300,21 @@ undercover-risk suspect_email.eml           # consolidated summary at the bottom
 pytest tests/test_mitre.py                  # no extra install needed
 ```
 
+## Audit logging
+
+The fourth "later addition": every submission to the API now leaves a
+trail -- what happened, when, and from which source IP -- queryable
+via `GET /audit/log`. No new extra to install; a broken audit write
+can never break the submission it's auditing.
+
+See [`docs/audit-logging.md`](docs/audit-logging.md) for what's logged
+and why it can't record a real "who" without an auth system.
+
+```bash
+undercover --submit examples/sample_emails/leaky_email.txt
+curl http://127.0.0.1:8000/audit/log
+```
+
 ## Project layout
 
 ```

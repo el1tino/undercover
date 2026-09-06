@@ -2,18 +2,23 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from undercover.api import models, schemas
+from undercover.api.audit import record_audit_event
 from undercover.api.database import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/phishing", tags=["phishing"])
 
 
 @router.post("/analyses", response_model=schemas.PhishingAnalysisOut, status_code=201)
 def create_analysis(
-    payload: schemas.PhishingAnalysisCreate, db: Session = Depends(get_db)
+    payload: schemas.PhishingAnalysisCreate, request: Request, db: Session = Depends(get_db)
 ) -> models.PhishingAnalysis:
     analysis = models.PhishingAnalysis(
         source=payload.source,
@@ -30,6 +35,19 @@ def create_analysis(
     db.add(analysis)
     db.commit()
     db.refresh(analysis)
+
+    try:
+        record_audit_event(
+            db,
+            action="phishing_analysis.created",
+            resource_type="phishing_analysis",
+            resource_id=analysis.id,
+            source_ip=request.client.host if request.client else None,
+            detail=f"source={analysis.source!r}, verdict={analysis.verdict!r}",
+        )
+    except Exception:
+        logger.exception("Audit logging failed for phishing analysis id=%s", analysis.id)
+
     return analysis
 
 

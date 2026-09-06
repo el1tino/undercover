@@ -1,6 +1,6 @@
 # Architecture
 
-## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning, alerting, and MITRE ATT&CK tagging)
+## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning, alerting, MITRE ATT&CK tagging, and audit logging)
 
 ```
 src/undercover/
@@ -20,11 +20,12 @@ src/undercover/
 ├── api/
 │   ├── client.py          # ApiClient: httpx-only, used by --submit in every CLI
 │   ├── database.py         # SQLAlchemy engine/session, SQLite by default
-│   ├── models.py            # DlpScan/Finding, PhishingAnalysis/RuleHit, RiskAssessment/Factor
+│   ├── models.py            # DlpScan/Finding, PhishingAnalysis/RuleHit, RiskAssessment/Factor, AuditLogEntry
 │   ├── schemas.py            # Pydantic request/response shapes
-│   ├── routes/                 # /dlp/scans, /phishing/analyses, /anomaly/senders, /risk/assessments
-│   ├── server.py               # FastAPI app (create_app, lifespan -> init_db)
-│   └── serve_cli.py             # entry point: `undercover-api`
+│   ├── audit.py               # record_audit_event, called from each POST route
+│   ├── routes/                  # /dlp/scans, /phishing/analyses, /anomaly/senders, /risk/assessments, /audit/log
+│   ├── server.py                # FastAPI app (create_app, lifespan -> init_db)
+│   └── serve_cli.py              # entry point: `undercover-api`
 ├── anomaly/
 │   ├── features.py        # extract_sender_features: groups analyses by sender
 │   ├── detector.py         # optional scikit-learn IsolationForest
@@ -140,6 +141,16 @@ src/undercover/
   message *content*, not adversary *behavior*, so there's no honest
   ATT&CK mapping for them, and forcing one would overclaim what the
   tool's signals actually represent.
+- **Audit logging is explicit per-route calls, not middleware.**
+  Middleware would log every request uniformly, but a `GET` doesn't
+  need an audit trail the way a state-changing `POST` does, and
+  middleware can't easily capture "the resource ID this specific
+  action created" the way a call placed right after `db.refresh()`
+  can. Three call sites (`dlp`, `phishing`, `risk` POST routes) is a
+  small amount of duplication in exchange for that specificity, and
+  each is wrapped in the same try/except-and-log pattern as alerting
+  -- a broken audit write must never break the submission it's
+  auditing.
 - **Alerting is centralized in the API, not duplicated per CLI.**
   `POST /risk/assessments` calls `AlertManager().maybe_alert()` on
   every submission regardless of source, so a future dashboard or
