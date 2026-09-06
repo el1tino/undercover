@@ -42,6 +42,15 @@ def test_json_output_is_valid_json(capsys, monkeypatch):
     payload = json.loads(captured.out)
     assert payload["verdict"] in {"clean", "suspicious", "phishing"}
     assert "rule_hits" in payload
+    urgency_hit = next(h for h in payload["rule_hits"] if h["name"] == "urgency_language")
+    assert urgency_hit["mitre_techniques"][0]["id"] == "T1566"
+
+
+def test_human_output_shows_attck_technique(capsys, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO(RAW_PHISHING_EMAIL))
+    main(["--no-ml"])
+    captured = capsys.readouterr()
+    assert "ATT&CK: T1566 (Phishing)" in captured.out
 
 
 def test_scans_a_file(tmp_path, capsys):

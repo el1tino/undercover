@@ -57,6 +57,30 @@ class TestPhishingDetectorRulesOnly:
             "rule_hits",
         }
 
+    def test_rule_hits_include_mitre_techniques(self):
+        detector = PhishingDetector(use_ml=False)
+        phishing_msg = make_message(
+            body="Please verify your account immediately or it will be closed."
+        )
+        result = detector.analyze(phishing_msg)
+        d = result.to_dict()
+        urgency_hit = next(h for h in d["rule_hits"] if h["name"] == "urgency_language")
+        assert urgency_hit["mitre_techniques"] == [
+            {
+                "id": "T1566",
+                "name": "Phishing",
+                "url": "https://attack.mitre.org/techniques/T1566/",
+            }
+        ]
+
+    def test_untagged_rule_has_empty_techniques_list(self):
+        detector = PhishingDetector(use_ml=False)
+        msg = make_message(body="Dear Valued Customer, please review the attached.")
+        result = detector.analyze(msg)
+        d = result.to_dict()
+        greeting_hit = next(h for h in d["rule_hits"] if h["name"] == "generic_greeting")
+        assert greeting_hit["mitre_techniques"] == []
+
 
 class TestPhishingDetectorWithMlRequested:
     def test_degrades_gracefully_or_produces_a_score(self):

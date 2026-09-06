@@ -45,6 +45,21 @@ def test_phishing_email_is_flagged(capsys, monkeypatch):
     assert "Factors:" in captured.out
 
 
+def test_human_output_includes_mitre_summary(capsys, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO(RAW_PHISHING_EMAIL))
+    main(COMMON_FLAGS)
+    captured = capsys.readouterr()
+    assert "MITRE ATT&CK techniques observed:" in captured.out
+    assert "T1566: Phishing" in captured.out
+
+
+def test_clean_email_has_no_mitre_summary(capsys, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO(RAW_CLEAN_EMAIL))
+    main(COMMON_FLAGS)
+    captured = capsys.readouterr()
+    assert "MITRE ATT&CK techniques observed:" not in captured.out
+
+
 def test_json_format_is_valid_json(capsys, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO(RAW_PHISHING_EMAIL))
     main(COMMON_FLAGS + ["--format", "json"])

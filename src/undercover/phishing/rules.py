@@ -13,6 +13,7 @@ import re
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+from undercover.mitre import AttackTechnique, techniques_for_rule_hit
 from undercover.phishing.email_message import EmailMessage
 
 _IPV4_RE = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
@@ -78,6 +79,12 @@ class RuleHit:
     name: str
     description: str
     weight: float
+
+    @property
+    def mitre_techniques(self) -> list[AttackTechnique]:
+        """MITRE ATT&CK techniques this hit maps to, if any -- see
+        undercover.mitre for the mapping and why some rules are untagged."""
+        return techniques_for_rule_hit(self.name)
 
 
 @dataclass(frozen=True)

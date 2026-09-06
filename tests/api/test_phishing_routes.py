@@ -30,6 +30,29 @@ class TestCreateAnalysis:
         assert body["verdict"] == "phishing"
         assert len(body["rule_hits"]) == 1
 
+    def test_rule_hit_response_includes_mitre_techniques(self, client):
+        payload = {
+            "source": "phishing.eml",
+            "verdict": "phishing",
+            "combined_score": 0.87,
+            "rule_score": 1.0,
+            "rule_hits": [
+                _rule_hit(name="urgency_language"),
+                _rule_hit(name="generic_greeting", description="generic greeting"),
+            ],
+        }
+        resp = client.post("/phishing/analyses", json=payload)
+        body = resp.json()
+        by_name = {h["name"]: h for h in body["rule_hits"]}
+        assert by_name["urgency_language"]["mitre_techniques"] == [
+            {
+                "id": "T1566",
+                "name": "Phishing",
+                "url": "https://attack.mitre.org/techniques/T1566/",
+            }
+        ]
+        assert by_name["generic_greeting"]["mitre_techniques"] == []
+
     def test_persists_sender_email(self, client):
         payload = {
             "source": "phishing.eml",

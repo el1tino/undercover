@@ -1,10 +1,11 @@
 # Architecture
 
-## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning and alerting)
+## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning, alerting, and MITRE ATT&CK tagging)
 
 ```
 src/undercover/
 ├── cli.py              # Phase 1 entry point: `undercover` (DLP scan)
+├── mitre.py             # ATT&CK technique registry + RuleHit-name -> technique mapping
 ├── dlp/
 │   ├── patterns.py     # regex rules + validators (Luhn, SSN checksum, IP)
 │   ├── ner.py           # optional spaCy wrapper, lazy-loaded
@@ -129,6 +130,16 @@ src/undercover/
   independent evidence, rather than an arbitrary `count * weight`
   formula that would need its own separate justification for the
   scaling constant.
+- **MITRE ATT&CK tags are computed, not stored.** A rule hit's
+  technique(s) are a deterministic function of its `name`
+  (`undercover.mitre.techniques_for_rule_hit`), so `RuleHit` exposes
+  them as a `@property` and `PhishingRuleHit` (the ORM model) mirrors
+  that with its own `@property` -- the same computed-field pattern
+  `DlpScan.finding_count` already used, extended to a lookup instead of
+  a `len()`. Only phishing `RuleHit`s are tagged: DLP findings describe
+  message *content*, not adversary *behavior*, so there's no honest
+  ATT&CK mapping for them, and forcing one would overclaim what the
+  tool's signals actually represent.
 - **Alerting is centralized in the API, not duplicated per CLI.**
   `POST /risk/assessments` calls `AlertManager().maybe_alert()` on
   every submission regardless of source, so a future dashboard or

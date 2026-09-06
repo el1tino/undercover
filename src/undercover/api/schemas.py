@@ -61,10 +61,17 @@ class PhishingRuleHitIn(BaseModel):
     weight: float
 
 
+class AttackTechniqueOut(BaseModel):
+    id: str
+    name: str
+    url: str
+
+
 class PhishingRuleHitOut(PhishingRuleHitIn):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    mitre_techniques: list[AttackTechniqueOut] = Field(default_factory=list)
 
 
 class PhishingAnalysisCreate(BaseModel):

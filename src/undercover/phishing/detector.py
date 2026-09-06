@@ -37,7 +37,15 @@ class PhishingResult:
             "ml_score": round(self.ml_score, 4) if self.ml_score is not None else None,
             "ml_skip_reason": self.ml_skip_reason,
             "rule_hits": [
-                {"name": h.name, "description": h.description, "weight": h.weight}
+                {
+                    "name": h.name,
+                    "description": h.description,
+                    "weight": h.weight,
+                    "mitre_techniques": [
+                        {"id": t.id, "name": t.name, "url": t.url}
+                        for t in h.mitre_techniques
+                    ],
+                }
                 for h in self.rule_hits
             ],
         }

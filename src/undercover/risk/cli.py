@@ -65,6 +65,7 @@ def _print_human(
     source_label: str,
     anomaly_skip_reason: str | None,
     attachment_verdicts: list[AttachmentVerdict] | None,
+    rule_hits: list,
 ) -> None:
     print(f"Risk assessment for {source_label}")
     print(f"  risk level: {assessment.risk_level.upper()}")
@@ -104,6 +105,12 @@ def _print_human(
             for lookup in verdict.lookups:
                 if lookup.attempted:
                     print(f"        [{lookup.source}] {lookup.detail}")
+
+    techniques = {t.id: t for hit in rule_hits for t in hit.mitre_techniques}
+    if techniques:
+        print("\n  MITRE ATT&CK techniques observed:")
+        for technique in sorted(techniques.values(), key=lambda t: t.id):
+            print(f"    - {technique.id}: {technique.name} ({technique.url})")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -216,7 +223,12 @@ def main(argv: list[str] | None = None) -> int:
         print(to_cef(assessment, source_label, sender_email))
     else:
         _print_human(
-            assessment, header_report, source_label, anomaly_skip_reason, attachment_verdicts
+            assessment,
+            header_report,
+            source_label,
+            anomaly_skip_reason,
+            attachment_verdicts,
+            phishing_result.rule_hits,
         )
 
     if args.submit:

@@ -32,7 +32,9 @@ def _print_human(result, source_label: str) -> None:
     if result.rule_hits:
         print("\n  Rule hits:")
         for hit in result.rule_hits:
-            print(f"    - [{hit.name}] {hit.description} (weight {hit.weight:.2f})")
+            techniques = ", ".join(f"{t.id} ({t.name})" for t in hit.mitre_techniques)
+            suffix = f" -- ATT&CK: {techniques}" if techniques else ""
+            print(f"    - [{hit.name}] {hit.description} (weight {hit.weight:.2f}){suffix}")
 
 
 def build_parser() -> argparse.ArgumentParser:

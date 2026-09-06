@@ -137,3 +137,25 @@ class TestRuleEngine:
         evaluation = RuleEngine().evaluate(msg)
         assert evaluation.score == 0.0
         assert evaluation.hits == []
+
+
+class TestRuleHitMitreTechniques:
+    def test_urgency_language_tagged_as_phishing(self):
+        msg = make_message(body="Please verify your account immediately.")
+        hits = check_urgency_language(msg)
+        techniques = hits[0].mitre_techniques
+        assert [t.id for t in techniques] == ["T1566"]
+
+    def test_spoofed_display_name_tagged_as_impersonation(self):
+        msg = make_message(
+            sender_display_name="PayPal Support",
+            sender_email="support@paypal-security.net",
+        )
+        hits = check_spoofed_display_name(msg)
+        techniques = hits[0].mitre_techniques
+        assert [t.id for t in techniques] == ["T1656"]
+
+    def test_generic_greeting_has_no_techniques(self):
+        msg = make_message(body="Dear Valued Customer, please review the attached.")
+        hits = check_generic_greeting(msg)
+        assert hits[0].mitre_techniques == []

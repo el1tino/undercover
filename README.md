@@ -281,6 +281,25 @@ pip install -e ".[dev,alerting]"
 pytest tests/alerting
 ```
 
+## MITRE ATT&CK tagging
+
+The third "later addition": phishing rule hits now carry the ATT&CK
+technique(s) they correspond to (e.g. `T1566.002 -- Spearphishing
+Link`), shown in `undercover-phish`, summarized in `undercover-risk`,
+and exposed by the API. No new dependency, no database migration --
+DLP findings and the anomaly/header signals are deliberately left
+untagged, since they describe message content or aggregate context
+rather than one discrete adversary technique.
+
+See [`docs/mitre-attack-tagging.md`](docs/mitre-attack-tagging.md) for
+the full mapping and why some detections are intentionally untagged.
+
+```bash
+undercover-phish suspect_email.eml          # per-rule-hit ATT&CK tags
+undercover-risk suspect_email.eml           # consolidated summary at the bottom
+pytest tests/test_mitre.py                  # no extra install needed
+```
+
 ## Project layout
 
 ```

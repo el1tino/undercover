@@ -15,6 +15,7 @@ from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from undercover.api.database import Base
+from undercover.mitre import techniques_for_rule_hit
 
 
 def _utcnow() -> datetime:
@@ -93,6 +94,15 @@ class PhishingRuleHit(Base):
     weight: Mapped[float] = mapped_column(Float)
 
     analysis: Mapped["PhishingAnalysis"] = relationship(back_populates="rule_hits")
+
+    @property
+    def mitre_techniques(self) -> list[dict]:
+        """Derived from `name` at read time -- deterministic, so there's
+        nothing to store (see undercover.mitre)."""
+        return [
+            {"id": t.id, "name": t.name, "url": t.url}
+            for t in techniques_for_rule_hit(self.name)
+        ]
 
 
 class RiskAssessment(Base):

@@ -66,11 +66,15 @@ Once the core works:
       crosses a configurable threshold, plus a standalone
       `undercover-risk --alert-threshold` path. See
       [`alerting.md`](alerting.md).
+- [x] **MITRE ATT&CK tagging on detections** ✅ implemented. Phase 2
+      phishing rule hits carry technique IDs (T1566, T1566.002, T1656);
+      DLP findings and the anomaly/header signals are deliberately left
+      untagged since they don't represent a discrete adversary
+      technique. See [`mitre-attack-tagging.md`](mitre-attack-tagging.md).
 - [ ] A basic triage/case-management view
 - [ ] Audit logging
 - [ ] A browser extension for one-click reporting
 - [ ] A trend dashboard
-- [ ] MITRE ATT&CK tagging on detections
 
 ## Engineering hygiene
 
