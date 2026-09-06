@@ -244,6 +244,43 @@ pip install -e ".[dev,attachments]"
 pytest tests/attachments
 ```
 
+## Alerting (webhook + Slack)
+
+The second "later addition": a high/critical risk assessment now
+triggers a notification instead of just sitting in the database.
+Fires centrally from `POST /risk/assessments` on every submission
+(regardless of which client submitted it), with a standalone CLI path
+too.
+
+See [`docs/alerting.md`](docs/alerting.md) for channel details and why
+alerting lives in the API rather than each CLI.
+
+### Install and configure
+
+```bash
+pip install -e ".[alerting]"   # or [api] -- both just need httpx
+export UNDERCOVER_ALERT_WEBHOOK_URL="https://example.com/your-webhook"   # optional
+export UNDERCOVER_SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..." # optional
+export UNDERCOVER_ALERT_THRESHOLD="high"   # optional, this is the default
+```
+
+### Use
+
+```bash
+# Fires automatically via the API on every submission that crosses the threshold
+undercover-risk --submit suspect_email.eml
+
+# Or standalone, no API involved
+undercover-risk --alert-threshold high suspect_email.eml
+```
+
+### Develop
+
+```bash
+pip install -e ".[dev,alerting]"
+pytest tests/alerting
+```
+
 ## Project layout
 
 ```
@@ -254,6 +291,7 @@ src/undercover/
 ├── api/           # Phase 3 -- implemented
 ├── anomaly/       # Phase 4 -- implemented
 ├── attachments/   # VirusTotal + MalwareBazaar hash lookup -- implemented
+├── alerting/      # webhook + Slack notifications -- implemented
 └── risk/          # Phase 5 -- implemented
 tests/           # pytest suite, mirrors src/ layout
 docs/            # architecture notes + per-phase design docs

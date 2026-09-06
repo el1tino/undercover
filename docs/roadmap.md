@@ -61,7 +61,11 @@ Once the core works:
       `undercover-risk` as an opt-in fifth signal
       (`--check-attachments`). See
       [`attachment-scanning.md`](attachment-scanning.md).
-- [ ] Alerting
+- [x] **Alerting** ✅ implemented. Webhook and Slack channels, fired
+      centrally from `POST /risk/assessments` on every submission that
+      crosses a configurable threshold, plus a standalone
+      `undercover-risk --alert-threshold` path. See
+      [`alerting.md`](alerting.md).
 - [ ] A basic triage/case-management view
 - [ ] Audit logging
 - [ ] A browser extension for one-click reporting

@@ -3,6 +3,8 @@
 import io
 import json
 
+import pytest
+
 from undercover.risk.cli import main
 
 RAW_CLEAN_EMAIL = (
@@ -131,3 +133,54 @@ def test_check_attachments_without_api_keys_degrades_gracefully(tmp_path, capsys
     assert exit_code == 0
     assert "invoice.exe: unchecked" in captured.out
     assert "could not be checked" in captured.out
+
+
+def test_alert_threshold_without_webhooks_does_not_crash(monkeypatch):
+    monkeypatch.delenv("UNDERCOVER_ALERT_WEBHOOK_URL", raising=False)
+    monkeypatch.delenv("UNDERCOVER_SLACK_WEBHOOK_URL", raising=False)
+    monkeypatch.setattr("sys.stdin", io.StringIO(RAW_PHISHING_EMAIL))
+    exit_code = main(COMMON_FLAGS + ["--alert-threshold", "low"])
+    assert exit_code == 0
+
+
+def test_submit_and_alert_threshold_together_skips_standalone_alerting(
+    tmp_path, capsys
+):
+    sample = tmp_path / "sample.eml"
+    sample.write_text(RAW_CLEAN_EMAIL)
+    exit_code = main(
+        COMMON_FLAGS
+        + [
+            "--submit",
+            "--alert-threshold",
+            "low",
+            "--api-url",
+            "http://127.0.0.1:59999",
+            str(sample),
+        ]
+    )
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "skipping standalone --alert-threshold" in captured.err
+
+
+def test_alert_delivered_prints_status(monkeypatch, capsys):
+    pytest.importorskip("httpx")
+    import httpx
+
+    monkeypatch.setenv("UNDERCOVER_ALERT_WEBHOOK_URL", "https://example.test/hook")
+    monkeypatch.delenv("UNDERCOVER_SLACK_WEBHOOK_URL", raising=False)
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(httpx, "post", lambda *a, **kw: FakeResponse())
+    monkeypatch.setattr("sys.stdin", io.StringIO(RAW_PHISHING_EMAIL))
+
+    exit_code = main(COMMON_FLAGS + ["--alert-threshold", "low"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Alert via webhook: delivered" in captured.err

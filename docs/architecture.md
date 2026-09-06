@@ -1,6 +1,6 @@
 # Architecture
 
-## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning)
+## Current shape (Phases 1-5, all core phases implemented, plus attachment scanning and alerting)
 
 ```
 src/undercover/
@@ -32,6 +32,10 @@ src/undercover/
 │   ├── virustotal.py       # hash-only lookup against VirusTotal's public API v3
 │   ├── malwarebazaar.py     # hash-only lookup against abuse.ch's MalwareBazaar
 │   └── scanner.py            # AttachmentScanner combines both; summarize_attachment_risk
+├── alerting/
+│   ├── channels.py         # WebhookChannel, SlackChannel -- both optional-httpx
+│   ├── manager.py           # AlertManager: threshold logic, fan-out to channels
+│   └── alert.py               # Alert dataclass + build_alert (structural typing, see below)
 └── risk/
     ├── headers.py          # Authentication-Results (SPF/DKIM/DMARC) parsing
     ├── scoring.py           # assess_risk: fuses DLP+phishing+header+anomaly+attachment signals
@@ -125,6 +129,28 @@ src/undercover/
   independent evidence, rather than an arbitrary `count * weight`
   formula that would need its own separate justification for the
   scaling constant.
+- **Alerting is centralized in the API, not duplicated per CLI.**
+  `POST /risk/assessments` calls `AlertManager().maybe_alert()` on
+  every submission regardless of source, so a future dashboard or
+  scheduled job that submits assessments gets alerting for free without
+  reimplementing it. `undercover-risk --alert-threshold` is a separate,
+  standalone path for using alerting without the API at all; passing
+  both `--submit` and `--alert-threshold` skips the standalone one
+  rather than double-alerting.
+- **`build_alert()` takes a `Protocol`, not a concrete class.** The API
+  route builds an alert from the incoming Pydantic
+  `RiskAssessmentCreate` payload; the CLI's standalone path builds one
+  from the `undercover.risk.scoring.RiskAssessment` dataclass. Both
+  satisfy the same structural shape (`risk_level`, `risk_score`,
+  `factors`) without `undercover.alerting` needing to import either
+  `undercover.api.schemas` or `undercover.risk.scoring` -- the same
+  reason `undercover.api.client` avoids importing the server modules.
+- **An alerting failure can never break a submission.** The
+  `RiskAssessment` row is already committed by the time
+  `AlertManager` runs in the route handler; any exception from it is
+  caught and logged, not allowed to turn a successful submission into
+  a 500. Caught by writing the test for this, not by anticipating it
+  up front -- see docs/alerting.md's Design Decisions for how.
 - **Attachment scanning is hash-lookup-only, and opt-in.** VirusTotal
   and MalwareBazaar both support uploading a file; `undercover.attachments`
   only ever sends a SHA-256 already computed locally (privacy, and it

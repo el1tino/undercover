@@ -13,6 +13,7 @@ import argparse
 import os
 import sys
 
+from undercover.alerting import AlertManager, build_alert
 from undercover.api.client import DEFAULT_API_URL, ApiClient, ApiClientError
 from undercover.attachments.results import AttachmentVerdict
 from undercover.attachments.scanner import AttachmentScanner
@@ -160,6 +161,17 @@ def build_parser() -> argparse.ArgumentParser:
         "MalwareBazaar. Opt-in: this makes real network requests and needs "
         "VT_API_KEY / MALWAREBAZAAR_API_KEY to actually check anything.",
     )
+    parser.add_argument(
+        "--alert-threshold",
+        choices=["low", "medium", "high", "critical"],
+        default=None,
+        help="Send an alert (webhook/Slack) if the risk level is at or above "
+        "this threshold. Needs UNDERCOVER_ALERT_WEBHOOK_URL and/or "
+        "UNDERCOVER_SLACK_WEBHOOK_URL configured to actually deliver "
+        "anything; --submit triggers this automatically via the API "
+        "(centralized regardless of who submits), this flag is for "
+        "standalone use without --submit.",
+    )
     return parser
 
 
@@ -219,6 +231,25 @@ def main(argv: list[str] | None = None) -> int:
             )
         except ApiClientError as exc:
             print(f"Warning: could not submit to API -- {exc}", file=sys.stderr)
+
+    if args.alert_threshold:
+        if args.submit:
+            print(
+                "Note: --submit already triggers alerting via the API; "
+                "skipping standalone --alert-threshold to avoid double-alerting.",
+                file=sys.stderr,
+            )
+        else:
+            alert = build_alert(assessment, source_label, sender_email)
+            results = AlertManager(threshold=args.alert_threshold).maybe_alert(alert)
+            if results is not None:
+                for result in results:
+                    if result.attempted:
+                        status = "delivered" if result.delivered else "failed"
+                        print(
+                            f"Alert via {result.channel}: {status} -- {result.detail}",
+                            file=sys.stderr,
+                        )
 
     if args.fail_on_risk is not None:
         if _LEVEL_ORDER[assessment.risk_level] >= _LEVEL_ORDER[args.fail_on_risk]:

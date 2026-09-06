@@ -64,6 +64,66 @@ class TestListAssessments:
         assert body[0]["source"] == "b.eml"
 
 
+class TestAlertingIntegration:
+    def test_submission_calls_alert_manager_with_built_alert(self, client, monkeypatch):
+        calls = []
+
+        class FakeAlertManager:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def maybe_alert(self, alert):
+                calls.append(alert)
+                return None
+
+        monkeypatch.setattr(
+            "undercover.api.routes.risk.AlertManager", FakeAlertManager
+        )
+
+        resp = client.post(
+            "/risk/assessments",
+            json={
+                "source": "phishing.eml",
+                "sender_email": "attacker@evil.example",
+                "risk_score": 0.9,
+                "risk_level": "critical",
+                "factors": [_factor()],
+            },
+        )
+        assert resp.status_code == 201
+        assert len(calls) == 1
+        assert calls[0].risk_level == "critical"
+        assert calls[0].source == "phishing.eml"
+        assert calls[0].sender_email == "attacker@evil.example"
+
+    def test_alert_manager_failure_does_not_break_submission(self, client, monkeypatch):
+        # A misbehaving alert channel must never prevent the assessment
+        # itself from being stored and returned -- the assessment is
+        # already committed by the time alerting runs.
+        class ExplodingAlertManager:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def maybe_alert(self, alert):
+                raise RuntimeError("simulated alerting failure")
+
+        monkeypatch.setattr(
+            "undercover.api.routes.risk.AlertManager", ExplodingAlertManager
+        )
+
+        resp = client.post(
+            "/risk/assessments",
+            json={
+                "source": "phishing.eml",
+                "risk_score": 0.9,
+                "risk_level": "critical",
+                "factors": [],
+            },
+        )
+        assert resp.status_code == 201
+        assert resp.json()["risk_level"] == "critical"
+
+
 class TestGetAssessment:
     def test_returns_full_detail(self, client):
         create_resp = client.post(

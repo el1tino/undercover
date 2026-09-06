@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from undercover.alerting import AlertManager, build_alert
 from undercover.api import models, schemas
 from undercover.api.database import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/risk", tags=["risk"])
 
@@ -27,6 +32,20 @@ def create_assessment(
     db.add(assessment)
     db.commit()
     db.refresh(assessment)
+
+    # Centralized alerting: fires regardless of which client submitted this
+    # (CLI, a future dashboard, anything else hitting the API), unlike
+    # undercover-risk's own --alert-threshold which only covers its own run.
+    # A broken alert channel must never take down the submission itself --
+    # the assessment is already committed by this point.
+    try:
+        alert = build_alert(
+            payload, source=payload.source, sender_email=payload.sender_email
+        )
+        AlertManager().maybe_alert(alert)
+    except Exception:
+        logger.exception("Alerting failed for risk assessment id=%s", assessment.id)
+
     return assessment
 
 
